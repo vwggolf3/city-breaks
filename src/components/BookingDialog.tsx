@@ -61,11 +61,15 @@ export const BookingDialog = ({ open, onOpenChange, flightOffer }: BookingDialog
         .eq('id', user.id)
         .single();
 
+      // Map profile gender to Amadeus-required format (MALE/FEMALE only)
+      const mappedGender = profile?.gender ? 
+        (profile.gender.toLowerCase() === 'female' ? 'FEMALE' : 'MALE') : '';
+
       setTraveler(prev => ({
         ...prev,
         firstName: profile?.first_name || '',
         lastName: profile?.last_name || '',
-        gender: profile?.gender || '',
+        gender: mappedGender,
         email: user.email || '',
       }));
     };
@@ -157,7 +161,7 @@ const validateForm = () => {
           firstName: traveler.firstName.toUpperCase(),
           lastName: traveler.lastName.toUpperCase(),
         },
-        gender: traveler.gender,
+        gender: traveler.gender.toUpperCase(),
         contact: {
           emailAddress: traveler.email,
           phones: [{
