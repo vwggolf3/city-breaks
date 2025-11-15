@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Calendar, DollarSign, Clock } from "lucide-react";
+import { format, addDays, nextFriday, nextSunday } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -24,35 +25,38 @@ export const SearchForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const getWeekendDates = (weekendValue: string) => {
+  // Generate the next 3 upcoming weekends dynamically
+  const upcomingWeekends = useMemo(() => {
     const today = new Date();
-    let departureDate = new Date();
+    const weekends = [];
+
+    // Find the next Friday
+    let currentFriday = nextFriday(today);
     
-    switch (weekendValue) {
-      case "this-weekend":
-        departureDate.setDate(today.getDate() + (5 - today.getDay() + 7) % 7);
-        break;
-      case "next-weekend":
-        departureDate.setDate(today.getDate() + (5 - today.getDay() + 7) % 7 + 7);
-        break;
-      case "2-weeks":
-        departureDate.setDate(today.getDate() + (5 - today.getDay() + 7) % 7 + 14);
-        break;
-      case "3-weeks":
-        departureDate.setDate(today.getDate() + (5 - today.getDay() + 7) % 7 + 21);
-        break;
-      default:
-        departureDate = new Date();
+    // If today is Friday and it's before evening, include this weekend
+    if (today.getDay() === 5 && today.getHours() < 18) {
+      currentFriday = today;
     }
-    
-    const returnDate = new Date(departureDate);
-    returnDate.setDate(departureDate.getDate() + 2);
-    
-    return {
-      departure: departureDate.toISOString().split('T')[0],
-      return: returnDate.toISOString().split('T')[0]
-    };
-  };
+
+    // Generate next 3 weekends
+    for (let i = 0; i < 3; i++) {
+      const friday = i === 0 ? currentFriday : addDays(currentFriday, i * 7);
+      const sunday = addDays(friday, 2);
+      
+      weekends.push({
+        value: `weekend-${i}`,
+        label: i === 0 
+          ? `This Weekend (${format(friday, 'MMM d')}-${format(sunday, 'd')})`
+          : i === 1
+          ? `Next Weekend (${format(friday, 'MMM d')}-${format(sunday, 'd')})`
+          : `In ${i} Weeks (${format(friday, 'MMM d')}-${format(sunday, 'd')})`,
+        departureDate: format(friday, 'yyyy-MM-dd'),
+        returnDate: format(sunday, 'yyyy-MM-dd')
+      });
+    }
+
+    return weekends;
+  }, []);
 
   const handleSearch = async () => {
     if (!origin || !destination || !weekend) {
@@ -67,7 +71,11 @@ export const SearchForm = () => {
     setIsLoading(true);
     
     try {
-      const dates = getWeekendDates(weekend);
+      // Find the selected weekend dates
+      const selectedWeekend = upcomingWeekends.find(w => w.value === weekend);
+      if (!selectedWeekend) {
+        throw new Error("Invalid weekend selection");
+      }
       
       // Extract airport codes (last 3 characters in parentheses if present, otherwise use as-is)
       const originCode = origin.match(/\(([A-Z]{3})\)/)?.[1] || origin.toUpperCase().slice(-3);
@@ -77,8 +85,8 @@ export const SearchForm = () => {
         body: {
           origin: originCode,
           destination: destCode,
-          departureDate: dates.departure,
-          returnDate: dates.return,
+          departureDate: selectedWeekend.departureDate,
+          returnDate: selectedWeekend.returnDate,
           maxPrice: budget ? parseInt(budget) : undefined,
           adults: 1,
         }
@@ -129,10 +137,11 @@ export const SearchForm = () => {
                 <SelectValue placeholder="Choose dates" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="this-weekend">This Weekend (Jan 17-19)</SelectItem>
-                <SelectItem value="next-weekend">Next Weekend (Jan 24-26)</SelectItem>
-                <SelectItem value="2-weeks">In 2 Weeks (Jan 31-Feb 2)</SelectItem>
-                <SelectItem value="3-weeks">In 3 Weeks (Feb 7-9)</SelectItem>
+                {upcomingWeekends.map((weekend) => (
+                  <SelectItem key={weekend.value} value={weekend.value}>
+                    {weekend.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
