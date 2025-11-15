@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,15 +12,17 @@ interface AmadeusTokenResponse {
   expires_in: number;
 }
 
-interface FlightSearchParams {
-  originLocationCode: string;
-  destinationLocationCode: string;
-  departureDate: string;
-  returnDate: string;
-  adults: number;
-  maxPrice?: number;
-  currencyCode?: string;
-}
+// Validation schema for flight search inputs
+const FlightSearchSchema = z.object({
+  origin: z.string().trim().length(3, { message: "Origin must be a 3-letter IATA code" }).regex(/^[A-Z]{3}$/, { message: "Origin must be uppercase letters" }),
+  destination: z.string().trim().length(3, { message: "Destination must be a 3-letter IATA code" }).regex(/^[A-Z]{3}$/, { message: "Destination must be uppercase letters" }),
+  departureDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { message: "Departure date must be YYYY-MM-DD format" }),
+  returnDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { message: "Return date must be YYYY-MM-DD format" }),
+  maxPrice: z.number().positive().max(100000).optional(),
+  adults: z.number().int().min(1).max(9).default(1),
+  departureTimePreference: z.enum(['any', 'morning', 'afternoon', 'evening', 'night']).optional(),
+  arrivalTimePreference: z.enum(['any', 'morning', 'afternoon', 'evening', 'night']).optional(),
+});
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -28,9 +31,28 @@ serve(async (req) => {
   }
 
   try {
-    const { origin, destination, departureDate, returnDate, maxPrice, adults = 1, departureTimePreference, arrivalTimePreference } = await req.json();
+    const rawInput = await req.json();
+    
+    // Validate input with Zod
+    const validationResult = FlightSearchSchema.safeParse(rawInput);
+    
+    if (!validationResult.success) {
+      console.error('Validation error:', validationResult.error.errors);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Invalid input parameters',
+          details: validationResult.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
 
-    console.log('Flight search request:', { origin, destination, departureDate, returnDate, maxPrice, adults, departureTimePreference, arrivalTimePreference });
+    const { origin, destination, departureDate, returnDate, maxPrice, adults, departureTimePreference, arrivalTimePreference } = validationResult.data;
+
+    console.log('Flight search request (validated):', { origin, destination, departureDate, returnDate, maxPrice, adults });
 
     // Get Amadeus credentials from environment
     const apiKey = Deno.env.get('AMADEUS_TEST_API_KEY');
@@ -39,10 +61,6 @@ serve(async (req) => {
 
     if (!apiKey || !apiSecret) {
       throw new Error('Amadeus API credentials not configured');
-    }
-
-    if (!origin || !destination) {
-      throw new Error('Origin and destination are required');
     }
 
     // Step 1: Get OAuth token
