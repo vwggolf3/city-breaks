@@ -36,6 +36,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 .update({
                   first_name: metadata.first_name || metadata.given_name || null,
                   last_name: metadata.last_name || metadata.family_name || null,
+                  gender: metadata.gender || null,
                   avatar_url: metadata.avatar_url || metadata.picture || null,
                 })
                 .eq("id", session.user.id)
