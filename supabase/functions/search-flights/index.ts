@@ -28,9 +28,9 @@ serve(async (req) => {
   }
 
   try {
-    const { origin, destination, departureDate, returnDate, maxPrice, adults = 1 } = await req.json();
+    const { origin, destination, departureDate, returnDate, maxPrice, adults = 1, departureTimePreference } = await req.json();
 
-    console.log('Flight search request:', { origin, destination, departureDate, returnDate, maxPrice, adults });
+    console.log('Flight search request:', { origin, destination, departureDate, returnDate, maxPrice, adults, departureTimePreference });
 
     // Get Amadeus credentials from environment
     const apiKey = Deno.env.get('AMADEUS_TEST_API_KEY');
@@ -74,6 +74,25 @@ serve(async (req) => {
       currencyCode: 'EUR',
       max: '50',
     });
+
+    // Add departure time filter based on preference
+    if (departureTimePreference && departureTimePreference !== 'any') {
+      let departureTime = '';
+      switch (departureTimePreference) {
+        case 'morning':
+          departureTime = '06:00:00';
+          break;
+        case 'afternoon':
+          departureTime = '12:00:00';
+          break;
+        case 'evening':
+          departureTime = '18:00:00';
+          break;
+      }
+      if (departureTime) {
+        searchParams.append('departureTime', departureTime);
+      }
+    }
 
     if (maxPrice) {
       searchParams.append('maxPrice', maxPrice.toString());
