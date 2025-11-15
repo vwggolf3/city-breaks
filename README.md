@@ -1,73 +1,248 @@
-# Welcome to your Lovable project
+# Weekend Flight Finder
 
-## Project info
+A modern web application for discovering spontaneous weekend getaways from your nearest airport. Built with React, TypeScript, and Lovable Cloud.
 
-**URL**: https://lovable.dev/projects/8c491dbd-7394-4351-8968-373dab9f78ab
+## 🚀 Quick Start
 
-## How can I edit this code?
+```bash
+# Install dependencies
+npm install
 
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/8c491dbd-7394-4351-8968-373dab9f78ab) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start development server
 npm run dev
+
+# Build for production
+npm run build
 ```
 
-**Edit a file directly in GitHub**
+## 📚 Documentation
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+- **[Database Schema](./docs/DATABASE.md)** - Complete database structure with ERD diagrams
+- **[Integrations](./docs/INTEGRATIONS.md)** - Third-party services (Supabase, Google OAuth, AI)
+- **[Dependencies](./docs/DEPENDENCIES.md)** - All npm packages and their purposes
+- **[Deployment](./docs/DEPLOYMENT.md)** - Hosting, scaling, and production guide
 
-**Use GitHub Codespaces**
+## 🏗️ Architecture
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### Frontend
+- **Framework:** React 18 with TypeScript
+- **Build Tool:** Vite
+- **Styling:** Tailwind CSS
+- **UI Components:** Shadcn UI (Radix UI primitives)
+- **Routing:** React Router v6
+- **State Management:** TanStack Query
 
-## What technologies are used for this project?
+### Backend (Lovable Cloud)
+- **Database:** PostgreSQL (Supabase)
+- **Authentication:** Email/Password + OAuth (Google)
+- **AI:** Lovable AI Gateway (Gemini 2.5, GPT-5)
+- **Hosting:** Lovable (production), Vercel (future)
 
-This project is built with:
+## 🗂️ Project Structure
 
-- Vite
+```
+weekend-flight-finder/
+├── docs/                    # Comprehensive documentation
+│   ├── DATABASE.md         # Database schema and ERD diagrams
+│   ├── INTEGRATIONS.md     # Third-party services
+│   ├── DEPENDENCIES.md     # npm packages
+│   └── DEPLOYMENT.md       # Deployment and scaling
+├── src/
+│   ├── components/         # Reusable UI components
+│   │   ├── ui/            # Shadcn components
+│   │   ├── Header.tsx     # App header with auth
+│   │   ├── Hero.tsx       # Landing page hero
+│   │   ├── SearchForm.tsx # Flight search form
+│   │   └── FlightCard.tsx # Flight result card
+│   ├── pages/             # Route pages
+│   │   ├── Index.tsx      # Landing page
+│   │   ├── Auth.tsx       # Sign in/up
+│   │   ├── Profile.tsx    # User profile
+│   │   ├── Favorites.tsx  # Saved destinations
+│   │   └── SavedSearches.tsx # Search history
+│   ├── contexts/          # React contexts
+│   │   └── AuthContext.tsx # Authentication state
+│   ├── integrations/
+│   │   └── supabase/      # Supabase client and types
+│   ├── hooks/             # Custom React hooks
+│   ├── lib/               # Utility functions
+│   └── assets/            # Images and static files
+├── supabase/              # Backend configuration
+│   ├── config.toml        # Supabase config
+│   └── migrations/        # Database migrations
+└── public/                # Static assets
+```
+
+## 🔑 Key Features
+
+### Implemented
+- ✅ User authentication (email/password, Google OAuth)
+- ✅ User profiles with preferences
+- ✅ Save favorite destinations
+- ✅ Save flight searches
+- ✅ Time constraints (e.g., school pickup times)
+- ✅ Trip preferences management
+- ✅ Responsive design
+- ✅ Dark mode support (components ready)
+
+### Planned
+- ⏳ Real flight API integration (Amadeus/Kiwi)
+- ⏳ Price alerts and notifications
+- ⏳ AI-powered trip recommendations
+- ⏳ Multi-city trip planning
+- ⏳ Booking integration
+- ⏳ Travel history and analytics
+
+## 🗄️ Database
+
+### Tables
+- **profiles** - User profile information
+- **saved_searches** - Flight search history
+- **favorite_destinations** - Saved cities/countries
+- **user_time_constraints** - Time window preferences
+- **trip_preferences** - General travel preferences
+
+See [DATABASE.md](./docs/DATABASE.md) for complete schema and relationships.
+
+## 🔐 Environment Variables
+
+```env
+# Supabase (auto-configured by Lovable)
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=your_anon_key
+VITE_SUPABASE_PROJECT_ID=your_project_id
+```
+
+**Note:** These are automatically managed by Lovable and should not be committed to Git.
+
+## 🚢 Deployment
+
+### Current (Lovable)
+- Push to main branch → Auto-deploy
+- Preview URLs for testing
+- Integrated with Lovable Cloud backend
+
+### Future (Self-Hosted)
+See [DEPLOYMENT.md](./docs/DEPLOYMENT.md) for:
+- Vercel deployment guide
+- Docker containerization
+- Database migration
+- Scaling strategies
+
+## 🧪 Development
+
+### Prerequisites
+- Node.js 18+ (20+ recommended)
+- npm 9+ or pnpm 8+
+
+### Local Development
+```bash
+# Clone repository
+git clone https://github.com/your-username/weekend-flight-finder.git
+cd weekend-flight-finder
+
+# Install dependencies
+npm install
+
+# Start dev server (http://localhost:8080)
+npm run dev
+
+# Type checking
+npm run typecheck
+
+# Linting
+npm run lint
+```
+
+### Testing
+```bash
+# Run all tests (when implemented)
+npm test
+
+# E2E tests (when implemented)
+npm run test:e2e
+```
+
+## 📖 API Documentation
+
+### Supabase Client
+
+```typescript
+import { supabase } from "@/integrations/supabase/client";
+
+// Query example
+const { data, error } = await supabase
+  .from('profiles')
+  .select('*')
+  .eq('id', userId)
+  .single();
+
+// Auth example
+const { data, error } = await supabase.auth.signUp({
+  email: 'user@example.com',
+  password: 'secure_password',
+});
+```
+
+See [INTEGRATIONS.md](./docs/INTEGRATIONS.md) for complete API documentation.
+
+## 🤝 Contributing
+
+### Documentation Maintenance
+When making changes, update relevant documentation:
+- Database changes → Update `docs/DATABASE.md` with new ERD
+- New dependencies → Add to `docs/DEPENDENCIES.md`
+- New integrations → Document in `docs/INTEGRATIONS.md`
+- Infrastructure changes → Update `docs/DEPLOYMENT.md`
+
+### Code Style
+- TypeScript strict mode
+- ESLint configuration in `eslint.config.js`
+- Prettier formatting (recommended)
+- Semantic commit messages
+
+## 📦 Technologies
+
+### Core
+- React 18.3.1
 - TypeScript
-- React
-- shadcn-ui
+- Vite
 - Tailwind CSS
 
-## How can I deploy this project?
+### UI & Components
+- Shadcn UI (Radix UI)
+- Lucide React (icons)
+- Sonner (toasts)
+- React Hook Form + Zod
 
-Simply open [Lovable](https://lovable.dev/projects/8c491dbd-7394-4351-8968-373dab9f78ab) and click on Share -> Publish.
+### Backend
+- Supabase (PostgreSQL, Auth, Storage)
+- Lovable AI Gateway
 
-## Can I connect a custom domain to my Lovable project?
+### Utilities
+- TanStack Query (data fetching)
+- date-fns (date manipulation)
+- clsx + tailwind-merge (class management)
 
-Yes, you can!
+See [DEPENDENCIES.md](./docs/DEPENDENCIES.md) for complete list.
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## 📄 License
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+[Your License Here]
+
+## 🔗 Links
+
+- **Live App:** [Your production URL]
+- **Documentation:** [docs/](./docs/)
+- **GitHub:** [Your GitHub repo]
+- **Lovable Project:** https://lovable.dev/projects/8c491dbd-7394-4351-8968-373dab9f78ab
+
+## 💬 Support
+
+- Documentation: Check `docs/` folder
+- Issues: [GitHub Issues](your-repo/issues)
+- Community: [Your Discord/Slack]
+
+---
+
+**Built with ❤️ using Lovable**
