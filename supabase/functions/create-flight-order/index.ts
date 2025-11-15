@@ -102,14 +102,9 @@ serve(async (req) => {
     console.log('Creating flight order for user:', user.id);
 
     // Normalize inputs for Amadeus API
+    // CRITICAL: Travelers array should NOT contain contact info (email/phones)
+    // Contact info goes in the separate contacts array only!
     const normalizedTravelers = (travelers as any[]).map((t: any) => {
-      // Normalize phones
-      const phones = (t.contact?.phones || []).map((p: any) => ({
-        deviceType: p.deviceType ?? 'MOBILE',
-        countryCallingCode: p.countryCallingCode,
-        number: p.number,
-      }));
-
       // Sanitize documents: keep only non-expired ones; remove if invalid
       let docs = Array.isArray((t as any).documents)
         ? (t as any).documents.filter((d: any) => {
@@ -119,19 +114,21 @@ serve(async (req) => {
           })
         : undefined;
 
+      // Build traveler object with ONLY: id, dateOfBirth, name, gender, documents
+      // Remove any contact info (email, phones) from travelers array
+      const { contact, ...travelerWithoutContact } = t;
+
       const base: any = {
-        ...t,
-        contact: {
-          ...t.contact,
-          phones,
-        },
+        id: travelerWithoutContact.id,
+        dateOfBirth: travelerWithoutContact.dateOfBirth,
+        name: travelerWithoutContact.name,
+        gender: travelerWithoutContact.gender,
       };
 
       if (docs && docs.length > 0) {
         return { ...base, documents: docs };
       } else {
-        const { documents, ...rest } = base;
-        return rest;
+        return base;
       }
     });
 
