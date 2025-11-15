@@ -48,7 +48,7 @@ export const BookingDialog = ({ open, onOpenChange, flightOffer }: BookingDialog
     dateOfBirth: "",
     gender: "",
     email: "",
-    phoneCountryCode: "1",
+    phoneCountryCode: "40",
     phone: "",
     passportNumber: "",
     passportExpiry: "",
@@ -247,7 +247,7 @@ const validateForm = () => {
         dateOfBirth: "",
         gender: "",
         email: "",
-        phoneCountryCode: "1",
+        phoneCountryCode: "40",
         phone: "",
         passportNumber: "",
         passportExpiry: "",
@@ -381,6 +381,7 @@ const validateForm = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="40">+40 (RO)</SelectItem>
                       <SelectItem value="1">+1 (US/CA)</SelectItem>
                       <SelectItem value="44">+44 (UK)</SelectItem>
                       <SelectItem value="33">+33 (FR)</SelectItem>
