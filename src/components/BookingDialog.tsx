@@ -181,33 +181,39 @@ export const BookingDialog = ({ open, onOpenChange, flightOffer }: BookingDialog
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Complete Your Booking</DialogTitle>
-          <DialogDescription>
-            {step === 'details' && "Enter traveler information to complete your booking"}
-            {step === 'confirming' && "Confirming flight availability and price..."}
-            {step === 'booking' && "Creating your flight booking..."}
-          </DialogDescription>
-        </DialogHeader>
-
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-12 space-y-4">
-            <Loader2 className="h-12 w-12 animate-spin text-primary" />
-            <p className="text-muted-foreground">
-              {step === 'confirming' && "Verifying flight details..."}
-              {step === 'booking' && "Processing your booking..."}
-            </p>
+        {!flightOffer ? (
+          <div className="p-8 text-center">
+            <p className="text-muted-foreground">No flight selected</p>
           </div>
         ) : (
-          <div className="space-y-6">
-            {/* Flight Summary */}
-            <div className="p-4 bg-muted/50 rounded-lg space-y-2">
-              <h3 className="font-semibold">Flight Summary</h3>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Route:</span>
-                <span>{flightOffer.itineraries[0].segments[0].departure.iataCode} → {flightOffer.itineraries[0].segments[flightOffer.itineraries[0].segments.length - 1].arrival.iataCode}</span>
+          <>
+            <DialogHeader>
+              <DialogTitle>Complete Your Booking</DialogTitle>
+              <DialogDescription>
+                {step === 'details' && "Enter traveler information to complete your booking"}
+                {step === 'confirming' && "Confirming flight availability and price..."}
+                {step === 'booking' && "Creating your flight booking..."}
+              </DialogDescription>
+            </DialogHeader>
+
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                <p className="text-muted-foreground">
+                  {step === 'confirming' && "Verifying flight details..."}
+                  {step === 'booking' && "Processing your booking..."}
+                </p>
               </div>
-              <div className="flex justify-between text-sm">
+            ) : (
+              <div className="space-y-6">
+                {/* Flight Summary */}
+                <div className="p-4 bg-muted/50 rounded-lg space-y-2">
+                  <h3 className="font-semibold">Flight Summary</h3>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Route:</span>
+                    <span>{flightOffer.itineraries[0].segments[0].departure.iataCode} → {flightOffer.itineraries[0].segments[flightOffer.itineraries[0].segments.length - 1].arrival.iataCode}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Total Price:</span>
                 <span className="font-semibold">{flightOffer.price.currency} {flightOffer.price.total}</span>
               </div>
@@ -305,6 +311,8 @@ export const BookingDialog = ({ open, onOpenChange, flightOffer }: BookingDialog
               </Button>
             </div>
           </div>
+        )}
+          </>
         )}
       </DialogContent>
     </Dialog>
