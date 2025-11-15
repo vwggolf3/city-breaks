@@ -14,7 +14,227 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      favorite_destinations: {
+        Row: {
+          created_at: string | null
+          destination_code: string | null
+          destination_name: string
+          destination_type: string
+          id: string
+          notes: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          destination_code?: string | null
+          destination_name: string
+          destination_type: string
+          id?: string
+          notes?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          destination_code?: string | null
+          destination_name?: string
+          destination_type?: string
+          id?: string
+          notes?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "favorite_destinations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          display_name: string | null
+          home_airport_code: string | null
+          id: string
+          preferred_currency: string | null
+          preferred_language: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          home_airport_code?: string | null
+          id: string
+          preferred_currency?: string | null
+          preferred_language?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          display_name?: string | null
+          home_airport_code?: string | null
+          id?: string
+          preferred_currency?: string | null
+          preferred_language?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      saved_searches: {
+        Row: {
+          budget: number | null
+          created_at: string | null
+          departure_time_preference: string | null
+          destination_airport: string | null
+          id: string
+          max_stops: number | null
+          notes: string | null
+          origin_airport: string
+          search_name: string | null
+          updated_at: string | null
+          user_id: string
+          weekend_date: string | null
+        }
+        Insert: {
+          budget?: number | null
+          created_at?: string | null
+          departure_time_preference?: string | null
+          destination_airport?: string | null
+          id?: string
+          max_stops?: number | null
+          notes?: string | null
+          origin_airport: string
+          search_name?: string | null
+          updated_at?: string | null
+          user_id: string
+          weekend_date?: string | null
+        }
+        Update: {
+          budget?: number | null
+          created_at?: string | null
+          departure_time_preference?: string | null
+          destination_airport?: string | null
+          id?: string
+          max_stops?: number | null
+          notes?: string | null
+          origin_airport?: string
+          search_name?: string | null
+          updated_at?: string | null
+          user_id?: string
+          weekend_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_searches_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trip_preferences: {
+        Row: {
+          accessibility_needs: string | null
+          baggage_preference: string | null
+          created_at: string | null
+          dietary_requirements: string | null
+          id: string
+          max_budget: number | null
+          max_stops: number | null
+          preferred_airlines: string[] | null
+          preferred_seat_class: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          accessibility_needs?: string | null
+          baggage_preference?: string | null
+          created_at?: string | null
+          dietary_requirements?: string | null
+          id?: string
+          max_budget?: number | null
+          max_stops?: number | null
+          preferred_airlines?: string[] | null
+          preferred_seat_class?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          accessibility_needs?: string | null
+          baggage_preference?: string | null
+          created_at?: string | null
+          dietary_requirements?: string | null
+          id?: string
+          max_budget?: number | null
+          max_stops?: number | null
+          preferred_airlines?: string[] | null
+          preferred_seat_class?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_time_constraints: {
+        Row: {
+          active: boolean | null
+          constraint_type: string
+          created_at: string | null
+          day_of_week: string
+          earliest_time: string | null
+          id: string
+          latest_time: string | null
+          reason: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          active?: boolean | null
+          constraint_type: string
+          created_at?: string | null
+          day_of_week: string
+          earliest_time?: string | null
+          id?: string
+          latest_time?: string | null
+          reason?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          active?: boolean | null
+          constraint_type?: string
+          created_at?: string | null
+          day_of_week?: string
+          earliest_time?: string | null
+          id?: string
+          latest_time?: string | null
+          reason?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_time_constraints_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
