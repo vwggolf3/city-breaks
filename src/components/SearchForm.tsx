@@ -30,6 +30,23 @@ export const SearchForm = () => {
   // Detect and set closest airport on component mount
   useEffect(() => {
     const detectClosestAirport = async () => {
+      // Check if we already have a saved airport in localStorage
+      const savedAirport = localStorage.getItem('closestAirport');
+      
+      if (savedAirport) {
+        try {
+          const airportData = JSON.parse(savedAirport);
+          const displayValue = `${airportData.name} (${airportData.iataCode})`;
+          setOrigin(displayValue);
+          console.log('Loaded saved airport from localStorage:', airportData.city);
+          return;
+        } catch (error) {
+          console.error('Error parsing saved airport:', error);
+          // If parsing fails, continue to detect
+        }
+      }
+
+      // If no saved airport, detect from IP
       try {
         const { data, error } = await supabase.functions.invoke('get-closest-airport', {
           body: {}
@@ -41,7 +58,10 @@ export const SearchForm = () => {
           const displayValue = `${data.airport.name} (${data.airport.iataCode})`;
           setOrigin(displayValue);
           
-          console.log(`Auto-detected closest airport: ${data.airport.city}, ${data.airport.country}`);
+          // Save to localStorage for future visits
+          localStorage.setItem('closestAirport', JSON.stringify(data.airport));
+          
+          console.log(`Auto-detected and saved closest airport: ${data.airport.city}, ${data.airport.country}`);
           
           if (data.distance) {
             toast({
