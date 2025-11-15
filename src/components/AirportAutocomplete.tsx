@@ -17,14 +17,10 @@ import {
 } from "@/components/ui/popover";
 
 interface Airport {
-  type: string;
-  subType: string;
   name: string;
   iataCode: string;
-  address?: {
-    cityName?: string;
-    countryName?: string;
-  };
+  city: string;
+  country: string;
 }
 
 interface AirportAutocompleteProps {
@@ -49,19 +45,17 @@ export const AirportAutocomplete = ({
 
   useEffect(() => {
     const debounceTimer = setTimeout(async () => {
-      if (inputValue.length >= 2) {
+      if (inputValue.length >= 1) {
         setIsLoading(true);
         try {
-          const { data, error } = await supabase.functions.invoke('search-airports', {
+          const { data, error } = await supabase.functions.invoke('get-airports', {
             body: { query: inputValue }
           });
 
           if (error) throw error;
 
           if (data?.data) {
-            setAirports(data.data.filter((item: Airport) => 
-              item.subType === 'AIRPORT' || item.subType === 'CITY'
-            ));
+            setAirports(data.data);
             setOpen(true);
           }
         } catch (error) {
@@ -138,9 +132,7 @@ export const AirportAutocomplete = ({
                         {airport.name}
                       </span>
                       <span className="text-sm text-muted-foreground">
-                        {airport.iataCode}
-                        {airport.address?.cityName && ` • ${airport.address.cityName}`}
-                        {airport.address?.countryName && `, ${airport.address.countryName}`}
+                        {airport.iataCode} • {airport.city}, {airport.country}
                       </span>
                     </div>
                   </CommandItem>
