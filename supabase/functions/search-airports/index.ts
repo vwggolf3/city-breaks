@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,6 +12,11 @@ interface AmadeusTokenResponse {
   expires_in: number;
 }
 
+// Validation schema for airport search
+const AirportSearchSchema = z.object({
+  query: z.string().trim().min(2, { message: "Query must be at least 2 characters" }).max(100, { message: "Query must be less than 100 characters" }),
+});
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -18,15 +24,28 @@ serve(async (req) => {
   }
 
   try {
-    const { query } = await req.json();
-
-    if (!query || query.length < 2) {
-      return new Response(JSON.stringify({ data: [] }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    const rawInput = await req.json();
+    
+    // Validate input with Zod
+    const validationResult = AirportSearchSchema.safeParse(rawInput);
+    
+    if (!validationResult.success) {
+      console.error('Validation error:', validationResult.error.errors);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Invalid input parameters',
+          details: validationResult.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
     }
 
-    console.log('Airport search request:', query);
+    const { query } = validationResult.data;
+
+    console.log('Airport search request (validated):', query);
 
     // Get Amadeus credentials from environment
     const apiKey = Deno.env.get('AMADEUS_TEST_API_KEY');

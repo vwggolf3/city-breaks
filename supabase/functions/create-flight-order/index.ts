@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -10,6 +11,45 @@ interface AmadeusTokenResponse {
   access_token: string;
   expires_in: number;
 }
+
+// Validation schema for flight order creation
+const FlightOrderSchema = z.object({
+  flightOffer: z.object({
+    id: z.string(),
+    price: z.object({
+      total: z.string(),
+      currency: z.string().length(3),
+    }),
+  }).passthrough(), // Allow additional Amadeus API fields
+  travelers: z.array(z.object({
+    id: z.string(),
+    name: z.object({
+      firstName: z.string().max(100),
+      lastName: z.string().max(100),
+    }),
+    dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    contact: z.object({
+      emailAddress: z.string().email().max(255),
+      phones: z.array(z.object({
+        countryCallingCode: z.string().max(5),
+        number: z.string().max(20),
+      })),
+    }),
+  }).passthrough()).min(1).max(9),
+  contacts: z.array(z.object({
+    addresseeName: z.object({
+      firstName: z.string().max(100),
+      lastName: z.string().max(100),
+    }),
+    address: z.object({
+      lines: z.array(z.string().max(200)),
+      postalCode: z.string().max(20),
+      cityName: z.string().max(100),
+      countryCode: z.string().length(2),
+    }),
+    purpose: z.string(),
+  }).passthrough()).min(1),
+});
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -38,7 +78,26 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    const { flightOffer, travelers, contacts } = await req.json();
+    const rawInput = await req.json();
+    
+    // Validate input with Zod
+    const validationResult = FlightOrderSchema.safeParse(rawInput);
+    
+    if (!validationResult.success) {
+      console.error('Validation error:', validationResult.error.errors);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Invalid input parameters',
+          details: validationResult.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    const { flightOffer, travelers, contacts } = validationResult.data;
     console.log('Creating flight order for user:', user.id);
 
     const apiKey = Deno.env.get('AMADEUS_TEST_API_KEY');
