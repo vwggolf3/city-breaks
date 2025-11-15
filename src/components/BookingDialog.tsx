@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Traveler {
   id: string;
@@ -26,6 +27,7 @@ interface BookingDialogProps {
 
 export const BookingDialog = ({ open, onOpenChange, flightOffer }: BookingDialogProps) => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'details' | 'confirming' | 'booking'>('details');
   const [traveler, setTraveler] = useState<Traveler>({
@@ -37,6 +39,40 @@ export const BookingDialog = ({ open, onOpenChange, flightOffer }: BookingDialog
     email: "",
     phone: "",
   });
+
+  // Auto-populate form with user data when dialog opens
+  useEffect(() => {
+    const loadUserData = async () => {
+      if (!open || !user) return;
+
+      // Set email from auth user
+      if (user.email) {
+        setTraveler(prev => ({ ...prev, email: user.email! }));
+      }
+
+      // Fetch profile data
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('display_name')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (profile?.display_name) {
+        // Split display name into first and last name
+        const nameParts = profile.display_name.trim().split(' ');
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || '';
+        
+        setTraveler(prev => ({
+          ...prev,
+          firstName,
+          lastName,
+        }));
+      }
+    };
+
+    loadUserData();
+  }, [open, user]);
 
   const handleInputChange = (field: keyof Traveler, value: string) => {
     setTraveler(prev => ({ ...prev, [field]: value }));
