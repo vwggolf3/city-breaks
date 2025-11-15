@@ -150,6 +150,7 @@ export type Database = {
           avatar_url: string | null
           created_at: string | null
           first_name: string | null
+          gender: string | null
           home_airport_code: string | null
           id: string
           last_name: string | null
@@ -161,6 +162,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string | null
           first_name?: string | null
+          gender?: string | null
           home_airport_code?: string | null
           id: string
           last_name?: string | null
@@ -172,6 +174,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string | null
           first_name?: string | null
+          gender?: string | null
           home_airport_code?: string | null
           id?: string
           last_name?: string | null

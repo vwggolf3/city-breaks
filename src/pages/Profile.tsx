@@ -23,6 +23,7 @@ interface Profile {
   id: string;
   first_name: string | null;
   last_name: string | null;
+  gender: string | null;
   preferred_currency: string | null;
   preferred_language: string | null;
   home_airport_code: string | null;
@@ -95,6 +96,7 @@ const Profile = () => {
         .update({
           first_name: profile?.first_name,
           last_name: profile?.last_name,
+          gender: profile?.gender,
           preferred_currency: profile?.preferred_currency,
           preferred_language: profile?.preferred_language,
           home_airport_code: profile?.home_airport_code,
@@ -222,6 +224,26 @@ const Profile = () => {
                       placeholder="Doe"
                     />
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="gender">Gender</Label>
+                  <Select
+                    value={profile?.gender || ""}
+                    onValueChange={(value) =>
+                      setProfile(prev => prev ? { ...prev, gender: value } : null)
+                    }
+                  >
+                    <SelectTrigger id="gender">
+                      <SelectValue placeholder="Select gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="male">Male</SelectItem>
+                      <SelectItem value="female">Female</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                      <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-2">
