@@ -26,7 +26,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setSession(session);
         setUser(session?.user ?? null);
         
-        if (event === "SIGNED_IN") {
+        if (event === "SIGNED_IN" && session?.user) {
+          // Sync profile data from OAuth providers (especially Google)
+          setTimeout(() => {
+            const metadata = session.user.user_metadata;
+            if (metadata) {
+              supabase
+                .from("profiles")
+                .update({
+                  first_name: metadata.first_name || metadata.given_name || null,
+                  last_name: metadata.last_name || metadata.family_name || null,
+                  avatar_url: metadata.avatar_url || metadata.picture || null,
+                })
+                .eq("id", session.user.id)
+                .then(({ error }) => {
+                  if (error) console.error("Error syncing profile:", error);
+                });
+            }
+          }, 0);
+          
           navigate("/");
         }
       }
