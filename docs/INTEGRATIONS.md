@@ -450,8 +450,8 @@ The Amadeus API uses OAuth 2.0 client credentials flow:
 
 **Secrets Configuration:**
 ```env
-AMADEUS_API_KEY=your_api_key
-AMADEUS_API_SECRET=your_api_secret
+AMADEUS_TEST_API_KEY=your_test_api_key
+AMADEUS_TEST_API_SECRET=your_test_api_secret
 AMADEUS_TEST_API_URL=test.api.amadeus.com
 ```
 
@@ -572,10 +572,11 @@ To move to production Amadeus API:
    - Choose a production plan
    - Get production credentials
 
-2. **Update Secrets:**
-   - Update `AMADEUS_API_KEY` with production key
-   - Update `AMADEUS_API_SECRET` with production secret
-   - Update `AMADEUS_TEST_API_URL` to `api.amadeus.com`
+2. **Add Production Secrets:**
+   - Add `AMADEUS_PROD_API_KEY` with production key
+   - Add `AMADEUS_PROD_API_SECRET` with production secret
+   - Add `AMADEUS_PROD_API_URL` set to `api.amadeus.com`
+   - Update edge function to use PROD secrets instead of TEST
 
 3. **Testing:**
    - Verify real flight data
@@ -704,10 +705,15 @@ VITE_SENTRY_DSN=your_sentry_dsn
 LOVABLE_API_KEY=auto_configured_by_lovable
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 
-# Amadeus Flight API (Active)
-AMADEUS_API_KEY=your_amadeus_key
-AMADEUS_API_SECRET=your_amadeus_secret
+# Amadeus Flight API (Test Environment - Active)
+AMADEUS_TEST_API_KEY=your_test_api_key
+AMADEUS_TEST_API_SECRET=your_test_api_secret
 AMADEUS_TEST_API_URL=test.api.amadeus.com
+
+# Amadeus Flight API (Production - Not Yet Configured)
+# AMADEUS_PROD_API_KEY=your_prod_api_key
+# AMADEUS_PROD_API_SECRET=your_prod_api_secret
+# AMADEUS_PROD_API_URL=api.amadeus.com
 
 # Future: Payments
 STRIPE_SECRET_KEY=your_stripe_secret_key

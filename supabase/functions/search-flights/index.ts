@@ -33,8 +33,8 @@ serve(async (req) => {
     console.log('Flight search request:', { origin, departureDate, returnDate, maxPrice, adults });
 
     // Get Amadeus credentials from environment
-    const apiKey = Deno.env.get('AMADEUS_API_KEY');
-    const apiSecret = Deno.env.get('AMADEUS_API_SECRET');
+    const apiKey = Deno.env.get('AMADEUS_TEST_API_KEY');
+    const apiSecret = Deno.env.get('AMADEUS_TEST_API_SECRET');
     const apiUrl = Deno.env.get('AMADEUS_TEST_API_URL') || 'test.api.amadeus.com';
 
     if (!apiKey || !apiSecret) {
