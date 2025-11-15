@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { AirportAutocomplete } from "@/components/AirportAutocomplete";
 
 interface Profile {
   id: string;
@@ -209,18 +210,16 @@ const Profile = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="homeAirport">Home Airport Code</Label>
-                  <Input
-                    id="homeAirport"
+                  <AirportAutocomplete
+                    label="Home Airport"
+                    placeholder="Search for your home airport..."
                     value={profile?.home_airport_code || ""}
-                    onChange={(e) =>
-                      setProfile(prev => prev ? { ...prev, home_airport_code: e.target.value.toUpperCase() } : null)
+                    onChange={(value) =>
+                      setProfile(prev => prev ? { ...prev, home_airport_code: value } : null)
                     }
-                    placeholder="e.g., LHR, CDG, AMS"
-                    maxLength={3}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Your default departure airport (3-letter code)
+                    Your default departure airport
                   </p>
                 </div>
 
