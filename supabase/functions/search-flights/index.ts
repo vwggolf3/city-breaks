@@ -21,52 +21,6 @@ interface FlightSearchParams {
   currencyCode?: string;
 }
 
-// Popular European weekend destinations
-const POPULAR_DESTINATIONS = [
-  'PAR', 'BCN', 'ROM', 'LON', 'AMS', 'BER', 'MAD', 'VIE', 
-  'PRG', 'DUB', 'LIS', 'ATH', 'IST', 'CPH', 'STO'
-];
-
-async function searchFlightsToDestination(
-  accessToken: string,
-  apiUrl: string,
-  origin: string,
-  destination: string,
-  departureDate: string,
-  returnDate: string,
-  maxPrice: number | undefined,
-  adults: number
-) {
-  const searchParams = new URLSearchParams({
-    originLocationCode: origin,
-    destinationLocationCode: destination,
-    departureDate,
-    returnDate,
-    adults: adults.toString(),
-    currencyCode: 'EUR',
-    max: '5', // Limit results per destination
-  });
-
-  if (maxPrice) {
-    searchParams.append('maxPrice', maxPrice.toString());
-  }
-
-  const response = await fetch(
-    `https://${apiUrl}/v2/shopping/flight-offers?${searchParams.toString()}`,
-    {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-    }
-  );
-
-  if (response.ok) {
-    return await response.json();
-  }
-  return null;
-}
-
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -74,9 +28,9 @@ serve(async (req) => {
   }
 
   try {
-    const { origin, departureDate, returnDate, maxPrice, adults = 1 } = await req.json();
+    const { origin, destination, departureDate, returnDate, maxPrice, adults = 1 } = await req.json();
 
-    console.log('Flight search request:', { origin, departureDate, returnDate, maxPrice, adults });
+    console.log('Flight search request:', { origin, destination, departureDate, returnDate, maxPrice, adults });
 
     // Get Amadeus credentials from environment
     const apiKey = Deno.env.get('AMADEUS_TEST_API_KEY');
@@ -85,6 +39,10 @@ serve(async (req) => {
 
     if (!apiKey || !apiSecret) {
       throw new Error('Amadeus API credentials not configured');
+    }
+
+    if (!origin || !destination) {
+      throw new Error('Origin and destination are required');
     }
 
     // Step 1: Get OAuth token
@@ -106,52 +64,43 @@ serve(async (req) => {
     const tokenData: AmadeusTokenResponse = await tokenResponse.json();
     console.log('OAuth token obtained successfully');
 
-    // Filter out the origin from destinations
-    const destinations = POPULAR_DESTINATIONS.filter(dest => dest !== origin);
-    
-    // Search flights to multiple destinations in parallel
-    console.log(`Searching flights from ${origin} to ${destinations.length} destinations`);
-    
-    const searchPromises = destinations.slice(0, 10).map(destination =>
-      searchFlightsToDestination(
-        tokenData.access_token,
-        apiUrl,
-        origin,
-        destination,
-        departureDate,
-        returnDate,
-        maxPrice,
-        adults
-      ).catch(err => {
-        console.error(`Failed to search ${origin}->${destination}:`, err.message);
-        return null;
-      })
-    );
+    // Search for specific destination
+    const searchParams = new URLSearchParams({
+      originLocationCode: origin,
+      destinationLocationCode: destination,
+      departureDate,
+      returnDate,
+      adults: adults.toString(),
+      currencyCode: 'EUR',
+      max: '50',
+    });
 
-    const results = await Promise.all(searchPromises);
-    
-    // Combine all flight offers
-    const allFlights = results
-      .filter(result => result && result.data)
-      .flatMap(result => result.data);
+    if (maxPrice) {
+      searchParams.append('maxPrice', maxPrice.toString());
+    }
 
-    console.log(`Found ${allFlights.length} total flight offers across destinations`);
+    console.log('Searching flights with params:', searchParams.toString());
 
-    // Sort by price
-    allFlights.sort((a, b) => 
-      parseFloat(a.price.total) - parseFloat(b.price.total)
-    );
-
-    // Return top 50 cheapest flights
-    const topFlights = allFlights.slice(0, 50);
-
-    return new Response(JSON.stringify({ 
-      data: topFlights,
-      meta: {
-        count: topFlights.length,
-        destinationsSearched: destinations.slice(0, 10).length
+    const flightResponse = await fetch(
+      `https://${apiUrl}/v2/shopping/flight-offers?${searchParams.toString()}`,
+      {
+        headers: {
+          'Authorization': `Bearer ${tokenData.access_token}`,
+          'Content-Type': 'application/json',
+        },
       }
-    }), {
+    );
+
+    if (!flightResponse.ok) {
+      const errorText = await flightResponse.text();
+      console.error('Flight search error:', errorText);
+      throw new Error(`Flight search failed: ${flightResponse.status}`);
+    }
+
+    const flightData = await flightResponse.json();
+    console.log(`Found ${flightData.data?.length || 0} flight offers`);
+
+    return new Response(JSON.stringify(flightData), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 

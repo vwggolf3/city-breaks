@@ -17,6 +17,7 @@ import { AirportAutocomplete } from "./AirportAutocomplete";
 
 export const SearchForm = () => {
   const [origin, setOrigin] = useState("");
+  const [destination, setDestination] = useState("");
   const [budget, setBudget] = useState("");
   const [weekend, setWeekend] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -53,10 +54,10 @@ export const SearchForm = () => {
   };
 
   const handleSearch = async () => {
-    if (!origin || !weekend) {
+    if (!origin || !destination || !weekend) {
       toast({
         title: "Missing information",
-        description: "Please fill in origin airport and select a weekend",
+        description: "Please fill in origin, destination, and select a weekend",
         variant: "destructive",
       });
       return;
@@ -70,6 +71,7 @@ export const SearchForm = () => {
       const { data, error } = await supabase.functions.invoke('search-flights', {
         body: {
           origin: origin.toUpperCase().slice(-3), // Extract airport code
+          destination: destination.toUpperCase().slice(-3), // Extract airport code
           departureDate: dates.departure,
           returnDate: dates.return,
           maxPrice: budget ? parseInt(budget) : undefined,
@@ -105,6 +107,13 @@ export const SearchForm = () => {
           <AirportAutocomplete
             value={origin}
             onChange={setOrigin}
+          />
+
+          <AirportAutocomplete
+            value={destination}
+            onChange={setDestination}
+            label="Destination Airport"
+            placeholder="e.g., Barcelona, Rome, Paris..."
           />
 
           <div className="space-y-2">
