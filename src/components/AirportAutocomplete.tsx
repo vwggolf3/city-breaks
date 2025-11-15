@@ -44,6 +44,26 @@ export const AirportAutocomplete = ({
   const [inputValue, setInputValue] = useState(value);
   const [selectedAirport, setSelectedAirport] = useState<Airport | null>(null);
 
+  // Sync internal inputValue with external value prop
+  useEffect(() => {
+    if (value !== inputValue) {
+      setInputValue(value);
+      // If the value is set externally (like auto-detect), mark it as selected
+      if (value && value.includes('(') && value.includes(')')) {
+        const match = value.match(/\(([A-Z]{3})\)/);
+        if (match) {
+          // Create a minimal airport object for selected state
+          setSelectedAirport({ 
+            name: value.split('(')[0].trim(), 
+            iataCode: match[1],
+            city: '',
+            country: ''
+          });
+        }
+      }
+    }
+  }, [value, inputValue]);
+
   useEffect(() => {
     const debounceTimer = setTimeout(async () => {
       // Only search if we don't have a selected airport or if the input has changed
