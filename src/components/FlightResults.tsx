@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Plane, Clock, MapPin, TrendingUp } from "lucide-react";
+import { Plane, Clock, MapPin, TrendingUp, ArrowUpDown } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { BookingDialog } from "@/components/BookingDialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Segment {
   departure: {
@@ -44,11 +45,47 @@ interface FlightResultsProps {
 export const FlightResults = ({ flights, origin, destination }: FlightResultsProps) => {
   const [selectedFlight, setSelectedFlight] = useState<FlightOffer | null>(null);
   const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
+  const [sortBy, setSortBy] = useState<string>("price-asc");
 
   const handleSelectFlight = (flight: FlightOffer) => {
     setSelectedFlight(flight);
     setBookingDialogOpen(true);
   };
+
+  const sortedFlights = useMemo(() => {
+    const flightsCopy = [...flights];
+    
+    switch (sortBy) {
+      case "price-asc":
+        return flightsCopy.sort((a, b) => parseFloat(a.price.total) - parseFloat(b.price.total));
+      case "price-desc":
+        return flightsCopy.sort((a, b) => parseFloat(b.price.total) - parseFloat(a.price.total));
+      case "departure-asc":
+        return flightsCopy.sort((a, b) => 
+          new Date(a.itineraries[0].segments[0].departure.at).getTime() - 
+          new Date(b.itineraries[0].segments[0].departure.at).getTime()
+        );
+      case "departure-desc":
+        return flightsCopy.sort((a, b) => 
+          new Date(b.itineraries[0].segments[0].departure.at).getTime() - 
+          new Date(a.itineraries[0].segments[0].departure.at).getTime()
+        );
+      case "arrival-asc":
+        return flightsCopy.sort((a, b) => {
+          const aLastSegment = a.itineraries[0].segments[a.itineraries[0].segments.length - 1];
+          const bLastSegment = b.itineraries[0].segments[b.itineraries[0].segments.length - 1];
+          return new Date(aLastSegment.arrival.at).getTime() - new Date(bLastSegment.arrival.at).getTime();
+        });
+      case "arrival-desc":
+        return flightsCopy.sort((a, b) => {
+          const aLastSegment = a.itineraries[0].segments[a.itineraries[0].segments.length - 1];
+          const bLastSegment = b.itineraries[0].segments[b.itineraries[0].segments.length - 1];
+          return new Date(bLastSegment.arrival.at).getTime() - new Date(aLastSegment.arrival.at).getTime();
+        });
+      default:
+        return flightsCopy;
+    }
+  }, [flights, sortBy]);
 
   if (flights.length === 0) {
     return (
@@ -88,19 +125,39 @@ export const FlightResults = ({ flights, origin, destination }: FlightResultsPro
 
   return (
     <div className="w-full max-w-4xl mx-auto mt-8 space-y-4">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-foreground">
-          Available Flights
-          <span className="text-muted-foreground text-lg ml-2">({flights.length} options)</span>
-        </h2>
-        <Badge variant="secondary" className="text-sm">
-          <TrendingUp className="h-3 w-3 mr-1" />
-          Best Deals
-        </Badge>
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground">
+            Available Flights
+            <span className="text-muted-foreground text-lg ml-2">({flights.length} options)</span>
+          </h2>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="price-asc">Price: Low to High</SelectItem>
+                <SelectItem value="price-desc">Price: High to Low</SelectItem>
+                <SelectItem value="departure-asc">Departure: Earliest</SelectItem>
+                <SelectItem value="departure-desc">Departure: Latest</SelectItem>
+                <SelectItem value="arrival-asc">Arrival: Earliest</SelectItem>
+                <SelectItem value="arrival-desc">Arrival: Latest</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Badge variant="secondary" className="text-sm">
+            <TrendingUp className="h-3 w-3 mr-1" />
+            Best Deals
+          </Badge>
+        </div>
       </div>
 
       <div className="space-y-4">
-        {flights.map((flight) => {
+        {sortedFlights.map((flight) => {
           const outbound = flight.itineraries[0];
           const returnFlight = flight.itineraries[1];
           const outboundStops = getStopsCount(outbound.segments);
