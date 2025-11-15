@@ -25,7 +25,7 @@ export const SearchForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  // Generate the next 3 upcoming weekends dynamically
+  // Generate the next 4 upcoming weekends dynamically
   const upcomingWeekends = useMemo(() => {
     const today = new Date();
     const weekends = [];
@@ -38,8 +38,8 @@ export const SearchForm = () => {
       currentFriday = today;
     }
 
-    // Generate next 3 weekends
-    for (let i = 0; i < 3; i++) {
+    // Generate next 4 weekends
+    for (let i = 0; i < 4; i++) {
       const friday = i === 0 ? currentFriday : addDays(currentFriday, i * 7);
       const sunday = addDays(friday, 2);
       
