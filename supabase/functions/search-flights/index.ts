@@ -75,25 +75,6 @@ serve(async (req) => {
       max: '50',
     });
 
-    // Add departure time filter based on preference
-    if (departureTimePreference && departureTimePreference !== 'any') {
-      let departureTime = '';
-      switch (departureTimePreference) {
-        case 'morning':
-          departureTime = '06:00:00';
-          break;
-        case 'afternoon':
-          departureTime = '12:00:00';
-          break;
-        case 'evening':
-          departureTime = '18:00:00';
-          break;
-      }
-      if (departureTime) {
-        searchParams.append('departureTime', departureTime);
-      }
-    }
-
     if (maxPrice) {
       searchParams.append('maxPrice', maxPrice.toString());
     }
@@ -119,7 +100,28 @@ serve(async (req) => {
     const flightData = await flightResponse.json();
     console.log(`Found ${flightData.data?.length || 0} flight offers`);
 
-    return new Response(JSON.stringify(flightData), {
+    // Filter flights by departure time preference if specified
+    let filteredFlights = flightData.data || [];
+    if (departureTimePreference && departureTimePreference !== 'any' && filteredFlights.length > 0) {
+      filteredFlights = filteredFlights.filter((flight: any) => {
+        const departureTime = flight.itineraries[0].segments[0].departure.at;
+        const hour = parseInt(departureTime.split('T')[1].split(':')[0]);
+        
+        switch (departureTimePreference) {
+          case 'morning':
+            return hour >= 6 && hour < 12;
+          case 'afternoon':
+            return hour >= 12 && hour < 18;
+          case 'evening':
+            return hour >= 18 && hour < 24;
+          default:
+            return true;
+        }
+      });
+      console.log(`Filtered to ${filteredFlights.length} flights matching ${departureTimePreference} preference`);
+    }
+
+    return new Response(JSON.stringify({ ...flightData, data: filteredFlights }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
