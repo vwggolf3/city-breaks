@@ -53,20 +53,15 @@ export const BookingDialog = ({ open, onOpenChange, flightOffer }: BookingDialog
       // Fetch profile data
       const { data: profile } = await supabase
         .from('profiles')
-        .select('display_name')
+        .select('first_name, last_name')
         .eq('id', user.id)
         .maybeSingle();
 
-      if (profile?.display_name) {
-        // Split display name into first and last name
-        const nameParts = profile.display_name.trim().split(' ');
-        const firstName = nameParts[0] || '';
-        const lastName = nameParts.slice(1).join(' ') || '';
-        
+      if (profile) {
         setTraveler(prev => ({
           ...prev,
-          firstName,
-          lastName,
+          firstName: profile.first_name || '',
+          lastName: profile.last_name || '',
         }));
       }
     };
