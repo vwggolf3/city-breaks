@@ -170,6 +170,31 @@ serve(async (req) => {
     const tokenData: AmadeusTokenResponse = await tokenResponse.json();
     console.log('Successfully obtained access token');
 
+    // Build the request payload
+    const orderPayload = {
+      data: {
+        type: 'flight-order',
+        flightOffers: [flightOffer],
+        travelers: normalizedTravelers,
+        remarks: {
+          general: [
+            {
+              subType: 'GENERAL_MISCELLANEOUS',
+              text: 'BOOKING FROM WEEKEND FLIGHT FINDER'
+            }
+          ]
+        },
+        ticketingAgreement: {
+          option: 'DELAY_TO_CANCEL',
+          delay: '6D'
+        },
+        contacts: normalizedContacts
+      }
+    };
+
+    // Log the full payload for debugging
+    console.log('Flight order payload:', JSON.stringify(orderPayload, null, 2));
+
     // Create flight order
     const orderResponse = await fetch(`${apiUrl}/v1/booking/flight-orders`, {
       method: 'POST',
@@ -177,26 +202,7 @@ serve(async (req) => {
         'Authorization': `Bearer ${tokenData.access_token}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        data: {
-          type: 'flight-order',
-          flightOffers: [flightOffer],
-          travelers: normalizedTravelers,
-          remarks: {
-            general: [
-              {
-                subType: 'GENERAL_MISCELLANEOUS',
-                text: 'BOOKING FROM WEEKEND FLIGHT FINDER'
-              }
-            ]
-          },
-          ticketingAgreement: {
-            option: 'DELAY_TO_CANCEL',
-            delay: '6D'
-          },
-          contacts: normalizedContacts
-        }
-      }),
+      body: JSON.stringify(orderPayload),
     });
 
     if (!orderResponse.ok) {
