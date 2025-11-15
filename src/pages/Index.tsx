@@ -1,6 +1,7 @@
 import { Hero } from "@/components/Hero";
 import { SearchForm } from "@/components/SearchForm";
 import { FlightCard } from "@/components/FlightCard";
+import { Header } from "@/components/Header";
 
 // Mock data for flight results
 const mockFlights = [
@@ -75,6 +76,7 @@ const mockFlights = [
 const Index = () => {
   return (
     <div className="min-h-screen bg-background">
+      <Header />
       <Hero />
       
       <section id="search" className="py-16 px-4 bg-secondary/30">
