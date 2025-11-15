@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Calendar, MapPin, DollarSign, Clock } from "lucide-react";
+import { Calendar, DollarSign, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { AirportAutocomplete } from "./AirportAutocomplete";
 
 export const SearchForm = () => {
   const [origin, setOrigin] = useState("");
@@ -101,19 +102,10 @@ export const SearchForm = () => {
     <Card className="w-full max-w-4xl mx-auto p-8 shadow-elevated border-border/50 bg-card/80 backdrop-blur-sm">
       <div className="space-y-6">
         <div className="grid gap-6 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="origin" className="flex items-center gap-2 text-foreground">
-              <MapPin className="h-4 w-4 text-primary" />
-              Origin Airport
-            </Label>
-            <Input
-              id="origin"
-              placeholder="e.g., London (LHR)"
-              value={origin}
-              onChange={(e) => setOrigin(e.target.value)}
-              className="h-12 border-border/50"
-            />
-          </div>
+          <AirportAutocomplete
+            value={origin}
+            onChange={setOrigin}
+          />
 
           <div className="space-y-2">
             <Label htmlFor="weekend" className="flex items-center gap-2 text-foreground">
