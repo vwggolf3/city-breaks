@@ -59,7 +59,7 @@ serve(async (req) => {
     // Step 2: Search for airports and cities
     const searchParams = new URLSearchParams({
       keyword: query,
-      max: '10',
+      subType: 'AIRPORT,CITY',
     });
 
     console.log('Searching airports with query:', query);
