@@ -23,6 +23,7 @@ export const SearchForm = () => {
   const [destination, setDestination] = useState("");
   const [budget, setBudget] = useState("");
   const [weekend, setWeekend] = useState("");
+  const [departureTimePreference, setDepartureTimePreference] = useState("any");
   const [isLoading, setIsLoading] = useState(false);
   const [flightResults, setFlightResults] = useState<any[]>([]);
   const { toast } = useToast();
@@ -142,6 +143,7 @@ export const SearchForm = () => {
           returnDate: selectedWeekend.returnDate,
           maxPrice: budget ? parseInt(budget) : undefined,
           adults: 1,
+          departureTimePreference,
         }
       });
 
@@ -225,7 +227,7 @@ export const SearchForm = () => {
                 <Clock className="h-4 w-4 text-primary" />
                 Preferred Departure Time
               </Label>
-              <Select defaultValue="any">
+              <Select value={departureTimePreference} onValueChange={setDepartureTimePreference}>
                 <SelectTrigger id="departure" className="h-12 border-border/50">
                   <SelectValue />
                 </SelectTrigger>
