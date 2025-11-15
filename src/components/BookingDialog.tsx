@@ -35,44 +35,38 @@ export const BookingDialog = ({ open, onOpenChange, flightOffer }: BookingDialog
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'details' | 'confirming' | 'booking'>('details');
-const [traveler, setTraveler] = useState<Traveler>({
-  id: "1",
-  firstName: "",
-  lastName: "",
-  dateOfBirth: "",
-  gender: "",
-  email: "",
-  phone: "",
-  passportNumber: "",
-  passportExpiry: "",
-  passportIssuanceCountry: "",
-  nationality: "",
-});
+  const [traveler, setTraveler] = useState<Traveler>({
+    id: "1",
+    firstName: "",
+    lastName: "",
+    dateOfBirth: "",
+    gender: "",
+    email: "",
+    phone: "",
+    passportNumber: "",
+    passportExpiry: "",
+    passportIssuanceCountry: "",
+    nationality: "",
+  });
 
   // Auto-populate form with user data when dialog opens
   useEffect(() => {
     const loadUserData = async () => {
       if (!open || !user) return;
 
-      // Set email from auth user
-      if (user.email) {
-        setTraveler(prev => ({ ...prev, email: user.email! }));
-      }
-
-      // Fetch profile data
+      // Fetch profile data and email
       const { data: profile } = await supabase
         .from('profiles')
         .select('first_name, last_name')
         .eq('id', user.id)
-        .maybeSingle();
+        .single();
 
-      if (profile) {
-        setTraveler(prev => ({
-          ...prev,
-          firstName: profile.first_name || '',
-          lastName: profile.last_name || '',
-        }));
-      }
+      setTraveler(prev => ({
+        ...prev,
+        firstName: profile?.first_name || '',
+        lastName: profile?.last_name || '',
+        email: user.email || '',
+      }));
     };
 
     loadUserData();
