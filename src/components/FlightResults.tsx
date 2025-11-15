@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Plane, Clock, MapPin, TrendingUp } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { BookingDialog } from "@/components/BookingDialog";
-import { useToast } from "@/hooks/use-toast";
 
 interface Segment {
   departure: {
@@ -43,20 +42,12 @@ interface FlightResultsProps {
 }
 
 export const FlightResults = ({ flights, origin, destination }: FlightResultsProps) => {
-  const { toast } = useToast();
   const [selectedFlight, setSelectedFlight] = useState<FlightOffer | null>(null);
   const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
 
   const handleSelectFlight = (flight: FlightOffer) => {
     setSelectedFlight(flight);
     setBookingDialogOpen(true);
-  };
-
-  const handleBookingComplete = (bookingData: any) => {
-    toast({
-      title: "Booking Confirmed!",
-      description: "Check your email for confirmation details.",
-    });
   };
 
   if (flights.length === 0) {
@@ -247,14 +238,11 @@ export const FlightResults = ({ flights, origin, destination }: FlightResultsPro
         })}
       </div>
 
-      {selectedFlight && (
-        <BookingDialog
-          open={bookingDialogOpen}
-          onOpenChange={setBookingDialogOpen}
-          flightOffer={selectedFlight}
-          onBookingComplete={handleBookingComplete}
-        />
-      )}
+      <BookingDialog 
+        open={bookingDialogOpen}
+        onOpenChange={setBookingDialogOpen}
+        flightOffer={selectedFlight}
+      />
     </div>
   );
 };
