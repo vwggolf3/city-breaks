@@ -129,10 +129,14 @@ const validateForm = () => {
     return false;
   }
 
-  if (traveler.passportIssuanceCountry.length !== 2 || traveler.nationality.length !== 2 || traveler.country.length !== 2) {
+  // Validate country codes are exactly 2 letters (no numbers)
+  const countryCodeRegex = /^[A-Z]{2}$/;
+  if (!countryCodeRegex.test(traveler.passportIssuanceCountry) || 
+      !countryCodeRegex.test(traveler.nationality) || 
+      !countryCodeRegex.test(traveler.country)) {
     toast({
       title: "Invalid country code",
-      description: "Country codes must be 2-letter ISO codes (e.g., US, GB, FR).",
+      description: "Country codes must be exactly 2 LETTERS (e.g., RO for Romania, US, GB, FR). Numbers like 'R0' are not valid.",
       variant: "destructive",
     });
     return false;
@@ -432,23 +436,23 @@ const validateForm = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="passportIssuanceCountry">Issuance Country (2-letter) *</Label>
+                  <Label htmlFor="passportIssuanceCountry">Issuance Country (2 letters, e.g., RO) *</Label>
                   <Input
                     id="passportIssuanceCountry"
                     value={traveler.passportIssuanceCountry}
                     maxLength={2}
-                    onChange={(e) => handleInputChange('passportIssuanceCountry', e.target.value.toUpperCase().slice(0,2))}
-                    placeholder="US"
+                    onChange={(e) => handleInputChange('passportIssuanceCountry', e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0,2))}
+                    placeholder="RO"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="nationality">Nationality (2-letter) *</Label>
+                  <Label htmlFor="nationality">Nationality (2 letters, e.g., RO) *</Label>
                   <Input
                     id="nationality"
                     value={traveler.nationality}
                     maxLength={2}
-                    onChange={(e) => handleInputChange('nationality', e.target.value.toUpperCase().slice(0,2))}
-                    placeholder="US"
+                    onChange={(e) => handleInputChange('nationality', e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0,2))}
+                    placeholder="RO"
                   />
                 </div>
               </div>
@@ -489,13 +493,13 @@ const validateForm = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="country">Country (2-letter) *</Label>
+                <Label htmlFor="country">Country (2 letters only, e.g., RO) *</Label>
                 <Input
                   id="country"
                   value={traveler.country}
                   maxLength={2}
-                  onChange={(e) => handleInputChange('country', e.target.value.toUpperCase().slice(0,2))}
-                  placeholder="US"
+                  onChange={(e) => handleInputChange('country', e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0,2))}
+                  placeholder="RO"
                 />
               </div>
             </div>
