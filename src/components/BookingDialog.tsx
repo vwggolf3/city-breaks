@@ -22,10 +22,9 @@ interface BookingDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   flightOffer: any;
-  onBookingComplete: (bookingData: any) => void;
 }
 
-export const BookingDialog = ({ open, onOpenChange, flightOffer, onBookingComplete }: BookingDialogProps) => {
+export const BookingDialog = ({ open, onOpenChange, flightOffer }: BookingDialogProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'details' | 'confirming' | 'booking'>('details');
@@ -153,7 +152,6 @@ export const BookingDialog = ({ open, onOpenChange, flightOffer, onBookingComple
         description: `Your booking reference is: ${orderResponse.data.data?.associatedRecords?.[0]?.reference}`,
       });
 
-      onBookingComplete(orderResponse.data);
       onOpenChange(false);
       
       // Reset form
