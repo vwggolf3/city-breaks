@@ -148,7 +148,7 @@ export const BookingDialog = ({ open, onOpenChange, flightOffer }: BookingDialog
           firstName: traveler.firstName.toUpperCase(),
           lastName: traveler.lastName.toUpperCase(),
         },
-        companyName: "WEEKEND FLIGHT FINDER",
+        companyName: "PersonalTravel",
         purpose: "STANDARD",
         phones: [{
           deviceType: "MOBILE",

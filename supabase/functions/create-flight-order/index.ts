@@ -31,6 +31,7 @@ const FlightOrderSchema = z.object({
     contact: z.object({
       emailAddress: z.string().email().max(255),
       phones: z.array(z.object({
+        deviceType: z.enum(['MOBILE', 'LANDLINE', 'FAX']),
         countryCallingCode: z.string().max(5),
         number: z.string().max(20),
       })),
