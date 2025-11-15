@@ -25,7 +25,7 @@ export const Header = () => {
           .from("profiles")
           .select("first_name, last_name")
           .eq("id", user.id)
-          .single();
+          .maybeSingle();
         
         if (data) {
           const name = [data.first_name, data.last_name].filter(Boolean).join(" ");
