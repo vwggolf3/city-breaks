@@ -2,6 +2,8 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Plane, User, LogOut, Settings } from "lucide-react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,6 +16,26 @@ import {
 export const Header = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const [userName, setUserName] = useState<string>("");
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (user) {
+        const { data } = await supabase
+          .from("profiles")
+          .select("first_name, last_name")
+          .eq("id", user.id)
+          .single();
+        
+        if (data) {
+          const name = [data.first_name, data.last_name].filter(Boolean).join(" ");
+          setUserName(name || "");
+        }
+      }
+    };
+    
+    fetchProfile();
+  }, [user]);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -34,7 +56,9 @@ export const Header = () => {
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">My Account</p>
+                    <p className="text-sm font-medium leading-none">
+                      {userName || "My Account"}
+                    </p>
                     <p className="text-xs leading-none text-muted-foreground">
                       {user.email}
                     </p>
