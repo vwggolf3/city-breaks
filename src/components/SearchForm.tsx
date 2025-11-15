@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { AirportAutocomplete } from "./AirportAutocomplete";
 import { DestinationAutocomplete } from "./DestinationAutocomplete";
+import { FlightResults } from "./FlightResults";
 
 export const SearchForm = () => {
   const [origin, setOrigin] = useState("");
@@ -23,6 +24,7 @@ export const SearchForm = () => {
   const [budget, setBudget] = useState("");
   const [weekend, setWeekend] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [flightResults, setFlightResults] = useState<any[]>([]);
   const { toast } = useToast();
 
   // Generate the next 4 upcoming weekends dynamically
@@ -69,6 +71,7 @@ export const SearchForm = () => {
     }
 
     setIsLoading(true);
+    setFlightResults([]); // Clear previous results
     
     try {
       // Find the selected weekend dates
@@ -96,6 +99,9 @@ export const SearchForm = () => {
 
       console.log('Flight search results:', data);
       
+      // Store the results
+      setFlightResults(data.data || []);
+      
       toast({
         title: "Search completed",
         description: `Found ${data.data?.length || 0} flight options`,
@@ -114,84 +120,94 @@ export const SearchForm = () => {
   };
 
   return (
-    <Card className="w-full max-w-4xl mx-auto p-8 shadow-elevated border-border/50 bg-card/80 backdrop-blur-sm">
-      <div className="space-y-6">
-        <div className="grid gap-6 md:grid-cols-2">
-          <AirportAutocomplete
-            value={origin}
-            onChange={setOrigin}
-          />
-
-          <DestinationAutocomplete
-            value={destination}
-            onChange={setDestination}
-          />
-
-          <div className="space-y-2">
-            <Label htmlFor="weekend" className="flex items-center gap-2 text-foreground">
-              <Calendar className="h-4 w-4 text-primary" />
-              Select Weekend
-            </Label>
-            <Select value={weekend} onValueChange={setWeekend}>
-              <SelectTrigger id="weekend" className="h-12 border-border/50">
-                <SelectValue placeholder="Choose dates" />
-              </SelectTrigger>
-              <SelectContent>
-                {upcomingWeekends.map((weekend) => (
-                  <SelectItem key={weekend.value} value={weekend.value}>
-                    {weekend.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <div className="grid gap-6 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="budget" className="flex items-center gap-2 text-foreground">
-              <DollarSign className="h-4 w-4 text-primary" />
-              Max Budget (per person)
-            </Label>
-            <Input
-              id="budget"
-              type="number"
-              placeholder="e.g., 200"
-              value={budget}
-              onChange={(e) => setBudget(e.target.value)}
-              className="h-12 border-border/50"
+    <>
+      <Card className="w-full max-w-4xl mx-auto p-8 shadow-elevated border-border/50 bg-card/80 backdrop-blur-sm">
+        <div className="space-y-6">
+          <div className="grid gap-6 md:grid-cols-2">
+            <AirportAutocomplete
+              value={origin}
+              onChange={setOrigin}
             />
+
+            <DestinationAutocomplete
+              value={destination}
+              onChange={setDestination}
+            />
+
+            <div className="space-y-2">
+              <Label htmlFor="weekend" className="flex items-center gap-2 text-foreground">
+                <Calendar className="h-4 w-4 text-primary" />
+                Select Weekend
+              </Label>
+              <Select value={weekend} onValueChange={setWeekend}>
+                <SelectTrigger id="weekend" className="h-12 border-border/50">
+                  <SelectValue placeholder="Choose dates" />
+                </SelectTrigger>
+                <SelectContent>
+                  {upcomingWeekends.map((weekend) => (
+                    <SelectItem key={weekend.value} value={weekend.value}>
+                      {weekend.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="departure" className="flex items-center gap-2 text-foreground">
-              <Clock className="h-4 w-4 text-primary" />
-              Preferred Departure Time
-            </Label>
-            <Select defaultValue="any">
-              <SelectTrigger id="departure" className="h-12 border-border/50">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="any">Any Time</SelectItem>
-                <SelectItem value="morning">Morning (6am-12pm)</SelectItem>
-                <SelectItem value="afternoon">Afternoon (12pm-6pm)</SelectItem>
-                <SelectItem value="evening">Evening (6pm-12am)</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="grid gap-6 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="budget" className="flex items-center gap-2 text-foreground">
+                <DollarSign className="h-4 w-4 text-primary" />
+                Max Budget (per person)
+              </Label>
+              <Input
+                id="budget"
+                type="number"
+                placeholder="e.g., 200"
+                value={budget}
+                onChange={(e) => setBudget(e.target.value)}
+                className="h-12 border-border/50"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="departure" className="flex items-center gap-2 text-foreground">
+                <Clock className="h-4 w-4 text-primary" />
+                Preferred Departure Time
+              </Label>
+              <Select defaultValue="any">
+                <SelectTrigger id="departure" className="h-12 border-border/50">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="any">Any Time</SelectItem>
+                  <SelectItem value="morning">Morning (6am-12pm)</SelectItem>
+                  <SelectItem value="afternoon">Afternoon (12pm-6pm)</SelectItem>
+                  <SelectItem value="evening">Evening (6pm-12am)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
+
+          <Button
+            onClick={handleSearch}
+            size="lg"
+            variant="cta"
+            className="w-full"
+            disabled={isLoading}
+          >
+            {isLoading ? "Searching flights..." : "Find Weekend Getaways"}
+          </Button>
         </div>
+      </Card>
 
-        <Button
-          onClick={handleSearch}
-          size="lg"
-          variant="cta"
-          className="w-full"
-          disabled={isLoading}
-        >
-          {isLoading ? "Searching flights..." : "Find Weekend Getaways"}
-        </Button>
-      </div>
-    </Card>
+      {flightResults.length > 0 && (
+        <FlightResults 
+          flights={flightResults} 
+          origin={origin} 
+          destination={destination} 
+        />
+      )}
+    </>
   );
 };
