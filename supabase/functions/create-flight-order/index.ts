@@ -102,17 +102,38 @@ serve(async (req) => {
     console.log('Creating flight order for user:', user.id);
 
     // Normalize inputs for Amadeus API
-    const normalizedTravelers = (travelers as any[]).map((t: any) => ({
-      ...t,
-      contact: {
-        ...t.contact,
-        phones: (t.contact?.phones || []).map((p: any) => ({
-          deviceType: p.deviceType ?? 'MOBILE',
-          countryCallingCode: p.countryCallingCode,
-          number: p.number,
-        })),
-      },
-    }));
+    const normalizedTravelers = (travelers as any[]).map((t: any) => {
+      // Normalize phones
+      const phones = (t.contact?.phones || []).map((p: any) => ({
+        deviceType: p.deviceType ?? 'MOBILE',
+        countryCallingCode: p.countryCallingCode,
+        number: p.number,
+      }));
+
+      // Sanitize documents: keep only non-expired ones; remove if invalid
+      let docs = Array.isArray((t as any).documents)
+        ? (t as any).documents.filter((d: any) => {
+            if (!d?.expiryDate) return false;
+            const ts = Date.parse(d.expiryDate);
+            return !Number.isNaN(ts) && ts > Date.now();
+          })
+        : undefined;
+
+      const base: any = {
+        ...t,
+        contact: {
+          ...t.contact,
+          phones,
+        },
+      };
+
+      if (docs && docs.length > 0) {
+        return { ...base, documents: docs };
+      } else {
+        const { documents, ...rest } = base;
+        return rest;
+      }
+    });
 
     const normalizedContacts = (contacts as any[]).map((c: any) => {
       const copy: any = { ...c };
@@ -184,7 +205,10 @@ serve(async (req) => {
     if (!orderResponse.ok) {
       const errorText = await orderResponse.text();
       console.error('Order creation failed:', errorText);
-      throw new Error(`Order creation failed: ${orderResponse.status}`);
+      return new Response(errorText, {
+        status: orderResponse.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const orderData = await orderResponse.json();
