@@ -16,8 +16,9 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-interface Destination {
-  code: string;
+interface Airport {
+  name: string;
+  iataCode: string;
   city: string;
   country: string;
 }
@@ -25,50 +26,64 @@ interface Destination {
 interface DestinationAutocompleteProps {
   value: string;
   onChange: (value: string) => void;
-  onSelect?: (destination: Destination) => void;
+  onSelect?: (airport: Airport) => void;
 }
 
 export const DestinationAutocomplete = ({ value, onChange, onSelect }: DestinationAutocompleteProps) => {
   const [open, setOpen] = useState(false);
-  const [destinations, setDestinations] = useState<Destination[]>([]);
+  const [airports, setAirports] = useState<Airport[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [inputValue, setInputValue] = useState(value);
+  const [selectedAirport, setSelectedAirport] = useState<Airport | null>(null);
 
   useEffect(() => {
     const debounceTimer = setTimeout(async () => {
-      setIsLoading(true);
-      try {
-        const { data, error } = await supabase.functions.invoke('get-destinations', {
-          body: { query: inputValue }
-        });
+      // Only search if we don't have a selected airport or if the input has changed
+      if (inputValue.length >= 1 && !selectedAirport) {
+        setIsLoading(true);
+        try {
+          const { data, error } = await supabase.functions.invoke('get-airports', {
+            body: { query: inputValue }
+          });
 
-        if (error) throw error;
+          if (error) throw error;
 
-        if (data?.data) {
-          setDestinations(data.data);
-          if (inputValue.length >= 1) {
+          if (data?.data) {
+            setAirports(data.data);
             setOpen(true);
           }
+        } catch (error) {
+          console.error('Airport search error:', error);
+          setAirports([]);
+        } finally {
+          setIsLoading(false);
         }
-      } catch (error) {
-        console.error('Destination search error:', error);
-        setDestinations([]);
-      } finally {
-        setIsLoading(false);
+      } else if (inputValue.length === 0) {
+        setAirports([]);
+        setSelectedAirport(null);
+        setOpen(false);
       }
     }, 300);
 
     return () => clearTimeout(debounceTimer);
-  }, [inputValue]);
+  }, [inputValue, selectedAirport]);
 
-  const handleSelect = (destination: Destination) => {
-    const displayValue = `${destination.city}, ${destination.country} (${destination.code})`;
+  const handleSelect = (airport: Airport) => {
+    const displayValue = `${airport.name} (${airport.iataCode})`;
     setInputValue(displayValue);
-    onChange(destination.code);
+    setSelectedAirport(airport);
+    onChange(airport.iataCode);
     if (onSelect) {
-      onSelect(destination);
+      onSelect(airport);
     }
     setOpen(false);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    setInputValue(newValue);
+    setSelectedAirport(null); // Clear selection when user starts typing
+    onChange(newValue);
   };
 
   return (
@@ -84,9 +99,11 @@ export const DestinationAutocomplete = ({ value, onChange, onSelect }: Destinati
               id="destination"
               placeholder="e.g., Barcelona, Rome, Paris..."
               value={inputValue}
-              onChange={(e) => {
-                setInputValue(e.target.value);
-                onChange(e.target.value);
+              onChange={handleInputChange}
+              onFocus={() => {
+                if (selectedAirport) {
+                  setOpen(true);
+                }
               }}
               className="h-12 border-border/50"
               autoComplete="off"
@@ -104,23 +121,23 @@ export const DestinationAutocomplete = ({ value, onChange, onSelect }: Destinati
         >
           <Command className="bg-transparent">
             <CommandList>
-              {destinations.length === 0 && !isLoading && (
-                <CommandEmpty>No destinations found.</CommandEmpty>
+              {airports.length === 0 && !isLoading && (
+                <CommandEmpty>No airports found.</CommandEmpty>
               )}
               <CommandGroup>
-                {destinations.map((destination) => (
+                {airports.map((airport) => (
                   <CommandItem
-                    key={destination.code}
-                    onSelect={() => handleSelect(destination)}
+                    key={airport.iataCode}
+                    onSelect={() => handleSelect(airport)}
                     className="flex items-center gap-3 cursor-pointer hover:bg-accent"
                   >
                     <Plane className="h-4 w-4 text-muted-foreground" />
                     <div className="flex flex-col">
                       <span className="font-medium text-foreground">
-                        {destination.city}
+                        {airport.name}
                       </span>
                       <span className="text-sm text-muted-foreground">
-                        {destination.code} • {destination.country}
+                        {airport.iataCode} • {airport.city}, {airport.country}
                       </span>
                     </div>
                   </CommandItem>

@@ -42,10 +42,12 @@ export const AirportAutocomplete = ({
   const [airports, setAirports] = useState<Airport[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [inputValue, setInputValue] = useState(value);
+  const [selectedAirport, setSelectedAirport] = useState<Airport | null>(null);
 
   useEffect(() => {
     const debounceTimer = setTimeout(async () => {
-      if (inputValue.length >= 1) {
+      // Only search if we don't have a selected airport or if the input has changed
+      if (inputValue.length >= 1 && !selectedAirport) {
         setIsLoading(true);
         try {
           const { data, error } = await supabase.functions.invoke('get-airports', {
@@ -64,23 +66,32 @@ export const AirportAutocomplete = ({
         } finally {
           setIsLoading(false);
         }
-      } else {
+      } else if (inputValue.length === 0) {
         setAirports([]);
+        setSelectedAirport(null);
         setOpen(false);
       }
     }, 300);
 
     return () => clearTimeout(debounceTimer);
-  }, [inputValue]);
+  }, [inputValue, selectedAirport]);
 
   const handleSelect = (airport: Airport) => {
     const displayValue = `${airport.name} (${airport.iataCode})`;
     setInputValue(displayValue);
+    setSelectedAirport(airport);
     onChange(airport.iataCode);
     if (onSelect) {
       onSelect(airport);
     }
     setOpen(false);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    setInputValue(newValue);
+    setSelectedAirport(null); // Clear selection when user starts typing
+    onChange(newValue);
   };
 
   return (
@@ -96,9 +107,11 @@ export const AirportAutocomplete = ({
               id={label}
               placeholder={placeholder}
               value={inputValue}
-              onChange={(e) => {
-                setInputValue(e.target.value);
-                onChange(e.target.value);
+              onChange={handleInputChange}
+              onFocus={() => {
+                if (selectedAirport) {
+                  setOpen(true);
+                }
               }}
               className="h-12 border-border/50"
               autoComplete="off"
