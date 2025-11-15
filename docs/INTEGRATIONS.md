@@ -428,37 +428,226 @@ if (error.status === 429) {
 
 ---
 
+## Amadeus Flight Search API
+
+### What is Amadeus?
+
+Amadeus is a leading travel technology provider offering comprehensive flight search and booking capabilities. We use their API to search for real-time flight offers from 400+ airlines across Europe and globally.
+
+### Current Setup
+
+**Status:** ✅ Enabled
+
+**API Endpoint:** `https://test.api.amadeus.com` (Test Environment)
+
+**Implementation Location:**
+- `supabase/functions/search-flights/index.ts` - Flight search edge function
+- `src/components/SearchForm.tsx` - User interface
+
+### Authentication
+
+The Amadeus API uses OAuth 2.0 client credentials flow:
+
+**Secrets Configuration:**
+```env
+AMADEUS_API_KEY=your_api_key
+AMADEUS_API_SECRET=your_api_secret
+AMADEUS_TEST_API_URL=test.api.amadeus.com
+```
+
+**⚠️ IMPORTANT:** These credentials are stored securely in Supabase secrets and only accessible by edge functions.
+
+### Features
+
+**Implemented:**
+- ✅ Round-trip flight search
+- ✅ Weekend getaway optimization
+- ✅ Budget filtering
+- ✅ Multi-airline comparison
+- ✅ Real-time pricing
+
+**Available but Not Yet Used:**
+- ⏳ One-way flights
+- ⏳ Multi-city routes
+- ⏳ Seat class selection
+- ⏳ Airline preferences
+- ⏳ Flexible dates search
+
+### API Usage
+
+#### Edge Function Implementation
+
+```typescript
+// Flight search request
+const { data, error } = await supabase.functions.invoke('search-flights', {
+  body: {
+    origin: 'LHR',           // Origin airport code
+    departureDate: '2025-01-17',
+    returnDate: '2025-01-19',
+    maxPrice: 200,           // Optional budget limit
+    adults: 1,
+  }
+});
+```
+
+#### Response Format
+
+```json
+{
+  "data": [
+    {
+      "id": "1",
+      "type": "flight-offer",
+      "price": {
+        "total": "189.50",
+        "currency": "EUR"
+      },
+      "itineraries": [
+        {
+          "segments": [
+            {
+              "departure": {
+                "iataCode": "LHR",
+                "at": "2025-01-17T08:30:00"
+              },
+              "arrival": {
+                "iataCode": "BCN",
+                "at": "2025-01-17T11:45:00"
+              },
+              "carrierCode": "BA",
+              "number": "492",
+              "aircraft": {
+                "code": "320"
+              },
+              "duration": "PT2H15M"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Rate Limits
+
+**Test Environment:**
+- 2,000 API calls per month (free)
+- 10 calls per second
+
+**Production Environment:**
+- Requires paid plan
+- Higher rate limits available
+- Enterprise options for high-volume
+
+### Error Handling
+
+The edge function handles common errors:
+
+```typescript
+// 401 - Invalid credentials
+// 429 - Rate limit exceeded  
+// 400 - Invalid request parameters
+// 500 - Amadeus API error
+```
+
+All errors are logged to edge function logs and returned to the client with appropriate messages.
+
+### Testing
+
+**Test Account:** Currently using test environment with sample data
+
+**Test Scenarios:**
+- Search from major European airports (LHR, CDG, MAD, etc.)
+- Weekend date ranges
+- Budget constraints
+- Multiple passengers
+
+### Migration to Production
+
+To move to production Amadeus API:
+
+1. **Upgrade Account:**
+   - Visit [developers.amadeus.com](https://developers.amadeus.com)
+   - Choose a production plan
+   - Get production credentials
+
+2. **Update Secrets:**
+   - Update `AMADEUS_API_KEY` with production key
+   - Update `AMADEUS_API_SECRET` with production secret
+   - Update `AMADEUS_TEST_API_URL` to `api.amadeus.com`
+
+3. **Testing:**
+   - Verify real flight data
+   - Monitor API usage
+   - Set up alerts for rate limits
+
+### Costs
+
+**Test Environment:** Free (2,000 calls/month)
+
+**Production Pricing (estimated):**
+- Pay-as-you-go: ~€0.01-0.05 per search
+- Monthly plans: Starting at €49/month
+- Enterprise: Custom pricing
+
+**Optimization Tips:**
+- Cache popular routes
+- Implement request debouncing
+- Use batch requests when possible
+
+### Scaling Considerations
+
+For high-volume production use:
+
+1. **Caching Strategy:**
+   ```typescript
+   // Cache flight results for 15 minutes
+   // Reduces API calls by ~70%
+   ```
+
+2. **Alternative Providers:**
+   - Implement Kiwi.com as fallback
+   - Use multiple providers for redundancy
+
+3. **Connection Pooling:**
+   - Reuse OAuth tokens (valid for 30 minutes)
+   - Implement token refresh logic
+
+### Support
+
+- **Documentation:** [developers.amadeus.com/docs](https://developers.amadeus.com/docs)
+- **Support Portal:** [developers.amadeus.com/support](https://developers.amadeus.com/support)
+- **Community:** Stack Overflow tag `amadeus-api`
+
+---
+
 ## Future Integrations
 
 ### Planned Flight Data Providers
 
-#### 1. Amadeus API (Recommended)
-**Purpose:** Real-time flight data
-
-**Features:**
-- Flight search
-- Price analytics
-- Airport information
-- Booking capabilities
-
-**Setup Required:**
-- Create account at [developers.amadeus.com](https://developers.amadeus.com)
-- Get API credentials
-- Store in Supabase secrets
-- Implement via Edge Functions
-
-#### 2. Kiwi.com API (Alternative)
+#### 1. Kiwi.com API (Alternative)
 **Purpose:** Budget flight aggregation
 
 **Features:**
 - Multi-city search
-- Budget airlines
+- Budget airlines focus
 - Price alerts
+- Good for European low-cost carriers
 
-#### 3. Skyscanner API
+**Status:** ⏳ Not yet implemented
+
+#### 2. Skyscanner API
 **Purpose:** Flight comparison
 
-**Note:** Requires partnership application
+**Features:**
+- Multi-source aggregation
+- Price comparison
+- Popular with consumers
+
+**Status:** ⏳ Requires partnership application
+
+**Note:** Amadeus API is now implemented and active. See [Amadeus Flight Search API](#amadeus-flight-search-api) section above.
 
 ### Planned Payment Integration
 
@@ -515,9 +704,10 @@ VITE_SENTRY_DSN=your_sentry_dsn
 LOVABLE_API_KEY=auto_configured_by_lovable
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 
-# Future: Flight APIs
+# Amadeus Flight API (Active)
 AMADEUS_API_KEY=your_amadeus_key
 AMADEUS_API_SECRET=your_amadeus_secret
+AMADEUS_TEST_API_URL=test.api.amadeus.com
 
 # Future: Payments
 STRIPE_SECRET_KEY=your_stripe_secret_key

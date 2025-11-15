@@ -11,15 +11,90 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 export const SearchForm = () => {
   const [origin, setOrigin] = useState("");
   const [budget, setBudget] = useState("");
   const [weekend, setWeekend] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
-  const handleSearch = () => {
-    // Mock search - will integrate real API later
-    console.log("Searching flights...", { origin, budget, weekend });
+  const getWeekendDates = (weekendValue: string) => {
+    const today = new Date();
+    let departureDate = new Date();
+    
+    switch (weekendValue) {
+      case "this-weekend":
+        departureDate.setDate(today.getDate() + (5 - today.getDay() + 7) % 7);
+        break;
+      case "next-weekend":
+        departureDate.setDate(today.getDate() + (5 - today.getDay() + 7) % 7 + 7);
+        break;
+      case "2-weeks":
+        departureDate.setDate(today.getDate() + (5 - today.getDay() + 7) % 7 + 14);
+        break;
+      case "3-weeks":
+        departureDate.setDate(today.getDate() + (5 - today.getDay() + 7) % 7 + 21);
+        break;
+      default:
+        departureDate = new Date();
+    }
+    
+    const returnDate = new Date(departureDate);
+    returnDate.setDate(departureDate.getDate() + 2);
+    
+    return {
+      departure: departureDate.toISOString().split('T')[0],
+      return: returnDate.toISOString().split('T')[0]
+    };
+  };
+
+  const handleSearch = async () => {
+    if (!origin || !weekend) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in origin airport and select a weekend",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      const dates = getWeekendDates(weekend);
+      
+      const { data, error } = await supabase.functions.invoke('search-flights', {
+        body: {
+          origin: origin.toUpperCase().slice(-3), // Extract airport code
+          departureDate: dates.departure,
+          returnDate: dates.return,
+          maxPrice: budget ? parseInt(budget) : undefined,
+          adults: 1,
+        }
+      });
+
+      if (error) throw error;
+
+      console.log('Flight search results:', data);
+      
+      toast({
+        title: "Search completed",
+        description: `Found ${data.data?.length || 0} flight options`,
+      });
+
+    } catch (error) {
+      console.error('Search error:', error);
+      toast({
+        title: "Search failed",
+        description: error instanceof Error ? error.message : "Failed to search flights",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -99,8 +174,9 @@ export const SearchForm = () => {
           size="lg"
           variant="cta"
           className="w-full"
+          disabled={isLoading}
         >
-          Find Weekend Getaways
+          {isLoading ? "Searching flights..." : "Find Weekend Getaways"}
         </Button>
       </div>
     </Card>
