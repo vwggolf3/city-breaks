@@ -28,9 +28,9 @@ serve(async (req) => {
   }
 
   try {
-    const { origin, destination, departureDate, returnDate, maxPrice, adults = 1, departureTimePreference } = await req.json();
+    const { origin, destination, departureDate, returnDate, maxPrice, adults = 1, departureTimePreference, arrivalTimePreference } = await req.json();
 
-    console.log('Flight search request:', { origin, destination, departureDate, returnDate, maxPrice, adults, departureTimePreference });
+    console.log('Flight search request:', { origin, destination, departureDate, returnDate, maxPrice, adults, departureTimePreference, arrivalTimePreference });
 
     // Get Amadeus credentials from environment
     const apiKey = Deno.env.get('AMADEUS_TEST_API_KEY');
@@ -118,7 +118,27 @@ serve(async (req) => {
             return true;
         }
       });
-      console.log(`Filtered to ${filteredFlights.length} flights matching ${departureTimePreference} preference`);
+      console.log(`Filtered to ${filteredFlights.length} flights matching ${departureTimePreference} departure preference`);
+    }
+
+    // Filter flights by arrival time preference if specified
+    if (arrivalTimePreference && arrivalTimePreference !== 'any' && filteredFlights.length > 0) {
+      filteredFlights = filteredFlights.filter((flight: any) => {
+        const arrivalTime = flight.itineraries[0].segments[flight.itineraries[0].segments.length - 1].arrival.at;
+        const hour = parseInt(arrivalTime.split('T')[1].split(':')[0]);
+        
+        switch (arrivalTimePreference) {
+          case 'morning':
+            return hour >= 6 && hour < 12;
+          case 'afternoon':
+            return hour >= 12 && hour < 18;
+          case 'evening':
+            return hour >= 18 && hour < 24;
+          default:
+            return true;
+        }
+      });
+      console.log(`Filtered to ${filteredFlights.length} flights matching ${arrivalTimePreference} arrival preference`);
     }
 
     return new Response(JSON.stringify({ ...flightData, data: filteredFlights }), {

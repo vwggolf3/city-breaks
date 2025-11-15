@@ -24,6 +24,7 @@ export const SearchForm = () => {
   const [budget, setBudget] = useState("");
   const [weekend, setWeekend] = useState("");
   const [departureTimePreference, setDepartureTimePreference] = useState("any");
+  const [arrivalTimePreference, setArrivalTimePreference] = useState("any");
   const [isLoading, setIsLoading] = useState(false);
   const [flightResults, setFlightResults] = useState<any[]>([]);
   const { toast } = useToast();
@@ -144,6 +145,7 @@ export const SearchForm = () => {
           maxPrice: budget ? parseInt(budget) : undefined,
           adults: 1,
           departureTimePreference,
+          arrivalTimePreference,
         }
       });
 
@@ -206,40 +208,60 @@ export const SearchForm = () => {
             </div>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="budget" className="flex items-center gap-2 text-foreground">
-                <DollarSign className="h-4 w-4 text-primary" />
-                Max Budget (per person)
-              </Label>
-              <Input
-                id="budget"
-                type="number"
-                placeholder="e.g., 200"
-                value={budget}
-                onChange={(e) => setBudget(e.target.value)}
-                className="h-12 border-border/50"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="departure" className="flex items-center gap-2 text-foreground">
-                <Clock className="h-4 w-4 text-primary" />
-                Preferred Departure Time
-              </Label>
-              <Select value={departureTimePreference} onValueChange={setDepartureTimePreference}>
-                <SelectTrigger id="departure" className="h-12 border-border/50">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="any">Any Time</SelectItem>
-                  <SelectItem value="morning">Morning (6am-12pm)</SelectItem>
-                  <SelectItem value="afternoon">Afternoon (12pm-6pm)</SelectItem>
-                  <SelectItem value="evening">Evening (6pm-12am)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+        <div className="grid gap-6 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="budget" className="flex items-center gap-2 text-foreground">
+              <DollarSign className="h-4 w-4 text-primary" />
+              Max Budget (per person)
+            </Label>
+            <Input
+              id="budget"
+              type="number"
+              placeholder="e.g., 200"
+              value={budget}
+              onChange={(e) => setBudget(e.target.value)}
+              className="h-12 border-border/50"
+            />
           </div>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="departure" className="flex items-center gap-2 text-foreground">
+              <Clock className="h-4 w-4 text-primary" />
+              Preferred Departure Time
+            </Label>
+            <Select value={departureTimePreference} onValueChange={setDepartureTimePreference}>
+              <SelectTrigger id="departure" className="h-12 border-border/50">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="any">Any Time</SelectItem>
+                <SelectItem value="morning">Morning (6am-12pm)</SelectItem>
+                <SelectItem value="afternoon">Afternoon (12pm-6pm)</SelectItem>
+                <SelectItem value="evening">Evening (6pm-12am)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="arrival" className="flex items-center gap-2 text-foreground">
+              <Clock className="h-4 w-4 text-primary" />
+              Preferred Arrival Time
+            </Label>
+            <Select value={arrivalTimePreference} onValueChange={setArrivalTimePreference}>
+              <SelectTrigger id="arrival" className="h-12 border-border/50">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="any">Any Time</SelectItem>
+                <SelectItem value="morning">Morning (6am-12pm)</SelectItem>
+                <SelectItem value="afternoon">Afternoon (12pm-6pm)</SelectItem>
+                <SelectItem value="evening">Evening (6pm-12am)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
 
           <Button
             onClick={handleSearch}
