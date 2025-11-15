@@ -58,6 +58,7 @@ export type Database = {
           booking_reference: string | null
           created_at: string
           currency: string
+          encrypted_traveler_name: string | null
           flight_data: Json
           flight_offer_id: string
           id: string
@@ -73,6 +74,7 @@ export type Database = {
           booking_reference?: string | null
           created_at?: string
           currency: string
+          encrypted_traveler_name?: string | null
           flight_data: Json
           flight_offer_id: string
           id?: string
@@ -88,6 +90,7 @@ export type Database = {
           booking_reference?: string | null
           created_at?: string
           currency?: string
+          encrypted_traveler_name?: string | null
           flight_data?: Json
           flight_offer_id?: string
           id?: string
@@ -285,10 +288,76 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      user_bookings: {
+        Row: {
+          booked_at: string | null
+          booking_reference: string | null
+          created_at: string | null
+          currency: string | null
+          flight_data: Json | null
+          flight_offer_id: string | null
+          id: string | null
+          order_id: string | null
+          status: string | null
+          total_price: number | null
+          traveler_data: Json | null
+          traveler_name: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          booked_at?: string | null
+          booking_reference?: string | null
+          created_at?: string | null
+          currency?: string | null
+          flight_data?: Json | null
+          flight_offer_id?: string | null
+          id?: string | null
+          order_id?: string | null
+          status?: string | null
+          total_price?: number | null
+          traveler_data?: Json | null
+          traveler_name?: never
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          booked_at?: string | null
+          booking_reference?: string | null
+          created_at?: string | null
+          currency?: string | null
+          flight_data?: Json | null
+          flight_offer_id?: string | null
+          id?: string | null
+          order_id?: string | null
+          status?: string | null
+          total_price?: number | null
+          traveler_data?: Json | null
+          traveler_name?: never
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      [_ in never]: never
+      create_encrypted_booking: {
+        Args: {
+          p_booked_at: string
+          p_booking_reference: string
+          p_contact_email: string
+          p_contact_phone: string
+          p_currency: string
+          p_flight_data: Json
+          p_flight_offer_id: string
+          p_order_id: string
+          p_status: string
+          p_total_price: number
+          p_traveler_name: string
+          p_user_id: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
