@@ -107,9 +107,10 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string | null
-          display_name: string | null
+          first_name: string | null
           home_airport_code: string | null
           id: string
+          last_name: string | null
           preferred_currency: string | null
           preferred_language: string | null
           updated_at: string | null
@@ -117,9 +118,10 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string | null
-          display_name?: string | null
+          first_name?: string | null
           home_airport_code?: string | null
           id: string
+          last_name?: string | null
           preferred_currency?: string | null
           preferred_language?: string | null
           updated_at?: string | null
@@ -127,9 +129,10 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string | null
-          display_name?: string | null
+          first_name?: string | null
           home_airport_code?: string | null
           id?: string
+          last_name?: string | null
           preferred_currency?: string | null
           preferred_language?: string | null
           updated_at?: string | null

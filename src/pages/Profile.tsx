@@ -21,7 +21,8 @@ import { AirportAutocomplete } from "@/components/AirportAutocomplete";
 
 interface Profile {
   id: string;
-  display_name: string | null;
+  first_name: string | null;
+  last_name: string | null;
   preferred_currency: string | null;
   preferred_language: string | null;
   home_airport_code: string | null;
@@ -92,7 +93,8 @@ const Profile = () => {
       const { error } = await supabase
         .from("profiles")
         .update({
-          display_name: profile?.display_name,
+          first_name: profile?.first_name,
+          last_name: profile?.last_name,
           preferred_currency: profile?.preferred_currency,
           preferred_language: profile?.preferred_language,
           home_airport_code: profile?.home_airport_code,
@@ -197,16 +199,29 @@ const Profile = () => {
           <TabsContent value="profile">
             <Card className="p-6">
               <form onSubmit={handleProfileUpdate} className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="displayName">Display Name</Label>
-                  <Input
-                    id="displayName"
-                    value={profile?.display_name || ""}
-                    onChange={(e) =>
-                      setProfile(prev => prev ? { ...prev, display_name: e.target.value } : null)
-                    }
-                    placeholder="Your name"
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="firstName">First Name</Label>
+                    <Input
+                      id="firstName"
+                      value={profile?.first_name || ""}
+                      onChange={(e) =>
+                        setProfile(prev => prev ? { ...prev, first_name: e.target.value } : null)
+                      }
+                      placeholder="John"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName">Last Name</Label>
+                    <Input
+                      id="lastName"
+                      value={profile?.last_name || ""}
+                      onChange={(e) =>
+                        setProfile(prev => prev ? { ...prev, last_name: e.target.value } : null)
+                      }
+                      placeholder="Doe"
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
