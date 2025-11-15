@@ -13,10 +13,15 @@ interface Traveler {
   id: string;
   firstName: string;
   lastName: string;
-  dateOfBirth: string;
+  dateOfBirth: string; // YYYY-MM-DD
   gender: string;
   email: string;
   phone: string;
+  // Passport fields required by Amadeus for ticketing
+  passportNumber: string;
+  passportExpiry: string; // YYYY-MM-DD
+  passportIssuanceCountry: string; // ISO 3166-1 alpha-2 (e.g., US)
+  nationality: string; // ISO 3166-1 alpha-2 (e.g., US)
 }
 
 interface BookingDialogProps {
@@ -30,15 +35,19 @@ export const BookingDialog = ({ open, onOpenChange, flightOffer }: BookingDialog
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'details' | 'confirming' | 'booking'>('details');
-  const [traveler, setTraveler] = useState<Traveler>({
-    id: "1",
-    firstName: "",
-    lastName: "",
-    dateOfBirth: "",
-    gender: "",
-    email: "",
-    phone: "",
-  });
+const [traveler, setTraveler] = useState<Traveler>({
+  id: "1",
+  firstName: "",
+  lastName: "",
+  dateOfBirth: "",
+  gender: "",
+  email: "",
+  phone: "",
+  passportNumber: "",
+  passportExpiry: "",
+  passportIssuanceCountry: "",
+  nationality: "",
+});
 
   // Auto-populate form with user data when dialog opens
   useEffect(() => {
@@ -73,18 +82,50 @@ export const BookingDialog = ({ open, onOpenChange, flightOffer }: BookingDialog
     setTraveler(prev => ({ ...prev, [field]: value }));
   };
 
-  const validateForm = () => {
-    if (!traveler.firstName || !traveler.lastName || !traveler.dateOfBirth || 
-        !traveler.gender || !traveler.email || !traveler.phone) {
-      toast({
-        title: "Missing Information",
-        description: "Please fill in all required fields.",
-        variant: "destructive",
-      });
-      return false;
-    }
-    return true;
-  };
+const validateForm = () => {
+  const required = [
+    traveler.firstName,
+    traveler.lastName,
+    traveler.dateOfBirth,
+    traveler.gender,
+    traveler.email,
+    traveler.phone,
+    traveler.passportNumber,
+    traveler.passportExpiry,
+    traveler.passportIssuanceCountry,
+    traveler.nationality,
+  ];
+
+  if (required.some((v) => !v)) {
+    toast({
+      title: "Missing Information",
+      description: "Please fill in all required fields.",
+      variant: "destructive",
+    });
+    return false;
+  }
+
+  const today = new Date().toISOString().split('T')[0];
+  if (traveler.passportExpiry <= today) {
+    toast({
+      title: "Invalid passport expiry",
+      description: "Passport expiry must be a future date.",
+      variant: "destructive",
+    });
+    return false;
+  }
+
+  if (traveler.passportIssuanceCountry.length !== 2 || traveler.nationality.length !== 2) {
+    toast({
+      title: "Invalid country code",
+      description: "Issuance country and nationality must be 2-letter codes (e.g., US).",
+      variant: "destructive",
+    });
+    return false;
+  }
+
+  return true;
+};
 
   const handleBookFlight = async () => {
     if (!validateForm()) return;
@@ -104,7 +145,8 @@ export const BookingDialog = ({ open, onOpenChange, flightOffer }: BookingDialog
       });
 
       if (priceResponse.error) {
-        throw new Error(priceResponse.error.message);
+        const apiErr = (priceResponse.data as any)?.errors?.[0];
+        throw new Error(apiErr ? `${apiErr.title}: ${apiErr.detail}` : priceResponse.error.message);
       }
 
       console.log('Price confirmed:', priceResponse.data);
@@ -131,15 +173,11 @@ export const BookingDialog = ({ open, onOpenChange, flightOffer }: BookingDialog
         },
         documents: [{
           documentType: "PASSPORT",
-          birthPlace: "Madrid",
-          issuanceLocation: "Madrid",
-          issuanceDate: "2015-04-14",
-          number: "00000000",
-          expiryDate: "2025-04-14",
-          issuanceCountry: "ES",
-          validityCountry: "ES",
-          nationality: "ES",
-          holder: true
+          number: traveler.passportNumber,
+          expiryDate: traveler.passportExpiry,
+          issuanceCountry: traveler.passportIssuanceCountry.toUpperCase(),
+          nationality: traveler.nationality.toUpperCase(),
+          holder: true,
         }]
       }];
 
@@ -173,7 +211,8 @@ export const BookingDialog = ({ open, onOpenChange, flightOffer }: BookingDialog
       });
 
       if (orderResponse.error) {
-        throw new Error(orderResponse.error.message);
+        const apiErr = (orderResponse.data as any)?.errors?.[0];
+        throw new Error(apiErr ? `${apiErr.title}: ${apiErr.detail}` : orderResponse.error.message);
       }
 
       console.log('Booking created:', orderResponse.data);
@@ -195,6 +234,10 @@ export const BookingDialog = ({ open, onOpenChange, flightOffer }: BookingDialog
         gender: "",
         email: "",
         phone: "",
+        passportNumber: "",
+        passportExpiry: "",
+        passportIssuanceCountry: "",
+        nationality: "",
       });
     } catch (error: any) {
       console.error('Booking error:', error);
@@ -320,6 +363,52 @@ export const BookingDialog = ({ open, onOpenChange, flightOffer }: BookingDialog
                   onChange={(e) => handleInputChange('phone', e.target.value)}
                   placeholder="555-555-5555"
                 />
+              </div>
+
+              <h3 className="font-semibold pt-4">Passport Details</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="passportNumber">Passport Number *</Label>
+                  <Input
+                    id="passportNumber"
+                    value={traveler.passportNumber}
+                    onChange={(e) => handleInputChange('passportNumber', e.target.value.trim())}
+                    placeholder="123456789"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="passportExpiry">Passport Expiry *</Label>
+                  <Input
+                    id="passportExpiry"
+                    type="date"
+                    value={traveler.passportExpiry}
+                    min={new Date().toISOString().split('T')[0]}
+                    onChange={(e) => handleInputChange('passportExpiry', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="passportIssuanceCountry">Issuance Country (2-letter) *</Label>
+                  <Input
+                    id="passportIssuanceCountry"
+                    value={traveler.passportIssuanceCountry}
+                    maxLength={2}
+                    onChange={(e) => handleInputChange('passportIssuanceCountry', e.target.value.toUpperCase().slice(0,2))}
+                    placeholder="US"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="nationality">Nationality (2-letter) *</Label>
+                  <Input
+                    id="nationality"
+                    value={traveler.nationality}
+                    maxLength={2}
+                    onChange={(e) => handleInputChange('nationality', e.target.value.toUpperCase().slice(0,2))}
+                    placeholder="US"
+                  />
+                </div>
               </div>
             </div>
 
