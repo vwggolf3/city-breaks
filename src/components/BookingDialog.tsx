@@ -16,12 +16,18 @@ interface Traveler {
   dateOfBirth: string; // YYYY-MM-DD
   gender: string;
   email: string;
+  phoneCountryCode: string;
   phone: string;
   // Passport fields required by Amadeus for ticketing
   passportNumber: string;
   passportExpiry: string; // YYYY-MM-DD
   passportIssuanceCountry: string; // ISO 3166-1 alpha-2 (e.g., US)
   nationality: string; // ISO 3166-1 alpha-2 (e.g., US)
+  // Address fields required by Amadeus
+  addressLine: string;
+  city: string;
+  postalCode: string;
+  country: string; // ISO 3166-1 alpha-2
 }
 
 interface BookingDialogProps {
@@ -42,11 +48,16 @@ export const BookingDialog = ({ open, onOpenChange, flightOffer }: BookingDialog
     dateOfBirth: "",
     gender: "",
     email: "",
+    phoneCountryCode: "1",
     phone: "",
     passportNumber: "",
     passportExpiry: "",
     passportIssuanceCountry: "",
     nationality: "",
+    addressLine: "",
+    city: "",
+    postalCode: "",
+    country: "",
   });
 
   // Auto-populate form with user data when dialog opens
@@ -93,6 +104,10 @@ const validateForm = () => {
     traveler.passportExpiry,
     traveler.passportIssuanceCountry,
     traveler.nationality,
+    traveler.addressLine,
+    traveler.city,
+    traveler.postalCode,
+    traveler.country,
   ];
 
   if (required.some((v) => !v)) {
@@ -114,10 +129,10 @@ const validateForm = () => {
     return false;
   }
 
-  if (traveler.passportIssuanceCountry.length !== 2 || traveler.nationality.length !== 2) {
+  if (traveler.passportIssuanceCountry.length !== 2 || traveler.nationality.length !== 2 || traveler.country.length !== 2) {
     toast({
       title: "Invalid country code",
-      description: "Issuance country and nationality must be 2-letter codes (e.g., US).",
+      description: "Country codes must be 2-letter ISO codes (e.g., US, GB, FR).",
       variant: "destructive",
     });
     return false;
@@ -166,7 +181,7 @@ const validateForm = () => {
           emailAddress: traveler.email,
           phones: [{
             deviceType: "MOBILE",
-            countryCallingCode: "1",
+            countryCallingCode: traveler.phoneCountryCode,
             number: traveler.phone.replace(/\D/g, ''),
           }],
         },
@@ -189,15 +204,15 @@ const validateForm = () => {
         purpose: "STANDARD",
         phones: [{
           deviceType: "MOBILE",
-          countryCallingCode: "1",
+          countryCallingCode: traveler.phoneCountryCode,
           number: traveler.phone.replace(/\D/g, ''),
         }],
         emailAddress: traveler.email,
         address: {
-          lines: ["123 Main St"],
-          postalCode: "10001",
-          cityName: "New York",
-          countryCode: "US"
+          lines: [traveler.addressLine],
+          postalCode: traveler.postalCode,
+          cityName: traveler.city,
+          countryCode: traveler.country.toUpperCase()
         }
       }];
 
@@ -232,11 +247,16 @@ const validateForm = () => {
         dateOfBirth: "",
         gender: "",
         email: "",
+        phoneCountryCode: "1",
         phone: "",
         passportNumber: "",
         passportExpiry: "",
         passportIssuanceCountry: "",
         nationality: "",
+        addressLine: "",
+        city: "",
+        postalCode: "",
+        country: "",
       });
     } catch (error: any) {
       console.error('Booking error:', error);
@@ -353,15 +373,37 @@ const validateForm = () => {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number *</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={traveler.phone}
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
-                  placeholder="555-555-5555"
-                />
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="phoneCountryCode">Country Code *</Label>
+                  <Select value={traveler.phoneCountryCode} onValueChange={(value) => handleInputChange('phoneCountryCode', value)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">+1 (US/CA)</SelectItem>
+                      <SelectItem value="44">+44 (UK)</SelectItem>
+                      <SelectItem value="33">+33 (FR)</SelectItem>
+                      <SelectItem value="49">+49 (DE)</SelectItem>
+                      <SelectItem value="34">+34 (ES)</SelectItem>
+                      <SelectItem value="39">+39 (IT)</SelectItem>
+                      <SelectItem value="31">+31 (NL)</SelectItem>
+                      <SelectItem value="32">+32 (BE)</SelectItem>
+                      <SelectItem value="41">+41 (CH)</SelectItem>
+                      <SelectItem value="351">+351 (PT)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2 col-span-2">
+                  <Label htmlFor="phone">Phone Number *</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={traveler.phone}
+                    onChange={(e) => handleInputChange('phone', e.target.value)}
+                    placeholder="555-555-5555"
+                  />
+                </div>
               </div>
 
               <h3 className="font-semibold pt-4">Passport Details</h3>
@@ -408,6 +450,52 @@ const validateForm = () => {
                     placeholder="US"
                   />
                 </div>
+              </div>
+
+              <h3 className="font-semibold pt-4">Contact Address</h3>
+              <div className="space-y-2">
+                <Label htmlFor="addressLine">Street Address *</Label>
+                <Input
+                  id="addressLine"
+                  value={traveler.addressLine}
+                  onChange={(e) => handleInputChange('addressLine', e.target.value)}
+                  placeholder="123 Main Street, Apt 4B"
+                  maxLength={200}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="city">City *</Label>
+                  <Input
+                    id="city"
+                    value={traveler.city}
+                    onChange={(e) => handleInputChange('city', e.target.value)}
+                    placeholder="New York"
+                    maxLength={100}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="postalCode">Postal Code *</Label>
+                  <Input
+                    id="postalCode"
+                    value={traveler.postalCode}
+                    onChange={(e) => handleInputChange('postalCode', e.target.value)}
+                    placeholder="10001"
+                    maxLength={20}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="country">Country (2-letter) *</Label>
+                <Input
+                  id="country"
+                  value={traveler.country}
+                  maxLength={2}
+                  onChange={(e) => handleInputChange('country', e.target.value.toUpperCase().slice(0,2))}
+                  placeholder="US"
+                />
               </div>
             </div>
 
