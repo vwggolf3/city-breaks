@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.search-airports]
 verify_jwt = false
+
+[functions.get-destinations]
+verify_jwt = false
