@@ -13,12 +13,58 @@ interface AmadeusTokenResponse {
 
 interface FlightSearchParams {
   originLocationCode: string;
-  destinationLocationCode?: string;
+  destinationLocationCode: string;
   departureDate: string;
   returnDate: string;
   adults: number;
   maxPrice?: number;
   currencyCode?: string;
+}
+
+// Popular European weekend destinations
+const POPULAR_DESTINATIONS = [
+  'PAR', 'BCN', 'ROM', 'LON', 'AMS', 'BER', 'MAD', 'VIE', 
+  'PRG', 'DUB', 'LIS', 'ATH', 'IST', 'CPH', 'STO'
+];
+
+async function searchFlightsToDestination(
+  accessToken: string,
+  apiUrl: string,
+  origin: string,
+  destination: string,
+  departureDate: string,
+  returnDate: string,
+  maxPrice: number | undefined,
+  adults: number
+) {
+  const searchParams = new URLSearchParams({
+    originLocationCode: origin,
+    destinationLocationCode: destination,
+    departureDate,
+    returnDate,
+    adults: adults.toString(),
+    currencyCode: 'EUR',
+    max: '5', // Limit results per destination
+  });
+
+  if (maxPrice) {
+    searchParams.append('maxPrice', maxPrice.toString());
+  }
+
+  const response = await fetch(
+    `https://${apiUrl}/v2/shopping/flight-offers?${searchParams.toString()}`,
+    {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+
+  if (response.ok) {
+    return await response.json();
+  }
+  return null;
 }
 
 serve(async (req) => {
@@ -60,42 +106,52 @@ serve(async (req) => {
     const tokenData: AmadeusTokenResponse = await tokenResponse.json();
     console.log('OAuth token obtained successfully');
 
-    // Step 2: Search for flights
-    const searchParams = new URLSearchParams({
-      originLocationCode: origin,
-      departureDate,
-      returnDate,
-      adults: adults.toString(),
-      currencyCode: 'EUR',
-      max: '50', // Limit results
-    });
-
-    if (maxPrice) {
-      searchParams.append('maxPrice', maxPrice.toString());
-    }
-
-    console.log('Searching flights with params:', searchParams.toString());
-
-    const flightResponse = await fetch(
-      `https://${apiUrl}/v2/shopping/flight-offers?${searchParams.toString()}`,
-      {
-        headers: {
-          'Authorization': `Bearer ${tokenData.access_token}`,
-          'Content-Type': 'application/json',
-        },
-      }
+    // Filter out the origin from destinations
+    const destinations = POPULAR_DESTINATIONS.filter(dest => dest !== origin);
+    
+    // Search flights to multiple destinations in parallel
+    console.log(`Searching flights from ${origin} to ${destinations.length} destinations`);
+    
+    const searchPromises = destinations.slice(0, 10).map(destination =>
+      searchFlightsToDestination(
+        tokenData.access_token,
+        apiUrl,
+        origin,
+        destination,
+        departureDate,
+        returnDate,
+        maxPrice,
+        adults
+      ).catch(err => {
+        console.error(`Failed to search ${origin}->${destination}:`, err.message);
+        return null;
+      })
     );
 
-    if (!flightResponse.ok) {
-      const errorText = await flightResponse.text();
-      console.error('Flight search error:', errorText);
-      throw new Error(`Flight search failed: ${flightResponse.status}`);
-    }
+    const results = await Promise.all(searchPromises);
+    
+    // Combine all flight offers
+    const allFlights = results
+      .filter(result => result && result.data)
+      .flatMap(result => result.data);
 
-    const flightData = await flightResponse.json();
-    console.log(`Found ${flightData.data?.length || 0} flight offers`);
+    console.log(`Found ${allFlights.length} total flight offers across destinations`);
 
-    return new Response(JSON.stringify(flightData), {
+    // Sort by price
+    allFlights.sort((a, b) => 
+      parseFloat(a.price.total) - parseFloat(b.price.total)
+    );
+
+    // Return top 50 cheapest flights
+    const topFlights = allFlights.slice(0, 50);
+
+    return new Response(JSON.stringify({ 
+      data: topFlights,
+      meta: {
+        count: topFlights.length,
+        destinationsSearched: destinations.slice(0, 10).length
+      }
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
