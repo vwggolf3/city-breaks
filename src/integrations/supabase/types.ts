@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      airports: {
+        Row: {
+          city: string
+          country: string
+          created_at: string | null
+          iata_code: string
+          id: string
+          last_synced_at: string | null
+          latitude: number | null
+          longitude: number | null
+          name: string
+          region: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          city: string
+          country: string
+          created_at?: string | null
+          iata_code: string
+          id?: string
+          last_synced_at?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          name: string
+          region?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          city?: string
+          country?: string
+          created_at?: string | null
+          iata_code?: string
+          id?: string
+          last_synced_at?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          name?: string
+          region?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       favorite_destinations: {
         Row: {
           created_at: string | null
