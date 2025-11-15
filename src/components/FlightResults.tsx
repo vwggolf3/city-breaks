@@ -132,27 +132,21 @@ export const FlightResults = ({ flights, origin, destination }: FlightResultsPro
             <span className="text-muted-foreground text-lg ml-2">({flights.length} options)</span>
           </h2>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="price-asc">Price: Low to High</SelectItem>
-                <SelectItem value="price-desc">Price: High to Low</SelectItem>
-                <SelectItem value="departure-asc">Departure: Earliest</SelectItem>
-                <SelectItem value="departure-desc">Departure: Latest</SelectItem>
-                <SelectItem value="arrival-asc">Arrival: Earliest</SelectItem>
-                <SelectItem value="arrival-desc">Arrival: Latest</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <Badge variant="secondary" className="text-sm">
-            <TrendingUp className="h-3 w-3 mr-1" />
-            Best Deals
-          </Badge>
+        <div className="flex items-center gap-2">
+          <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="price-asc">Price: Low to High</SelectItem>
+              <SelectItem value="price-desc">Price: High to Low</SelectItem>
+              <SelectItem value="departure-asc">Departure: Earliest</SelectItem>
+              <SelectItem value="departure-desc">Departure: Latest</SelectItem>
+              <SelectItem value="arrival-asc">Arrival: Earliest</SelectItem>
+              <SelectItem value="arrival-desc">Arrival: Latest</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
