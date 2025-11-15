@@ -264,9 +264,15 @@ const validateForm = () => {
       });
     } catch (error: any) {
       console.error('Booking error:', error);
+      
+      // Check if it's the common test environment limitation (error 38189)
+      const isTestEnvError = error.message?.includes('38189') || error.message?.includes('Internal error');
+      
       toast({
         title: "Booking Failed",
-        description: error.message || "Failed to complete booking. Please try again.",
+        description: isTestEnvError 
+          ? "This flight is unavailable in the test environment. The test API uses limited cached inventory that fills up quickly. Try: (1) a different date further in the future, (2) a less popular route, or (3) upgrading to production API for real bookings."
+          : error.message || "Failed to complete booking. Please try again.",
         variant: "destructive",
       });
       setStep('details');
@@ -292,6 +298,13 @@ const validateForm = () => {
                 {step === 'booking' && "Creating your flight booking..."}
               </DialogDescription>
             </DialogHeader>
+
+            {/* Test Environment Notice */}
+            <div className="bg-muted/50 border border-border rounded-lg p-3 text-sm">
+              <p className="text-muted-foreground">
+                <strong>Note:</strong> This is a test booking. Popular flights may show as unavailable due to limited test inventory.
+              </p>
+            </div>
 
             {loading ? (
               <div className="flex flex-col items-center justify-center py-12 space-y-4">
