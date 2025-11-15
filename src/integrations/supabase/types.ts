@@ -52,6 +52,54 @@ export type Database = {
           },
         ]
       }
+      flight_bookings: {
+        Row: {
+          booked_at: string | null
+          booking_reference: string | null
+          created_at: string
+          currency: string
+          flight_data: Json
+          flight_offer_id: string
+          id: string
+          order_id: string | null
+          status: string
+          total_price: number
+          traveler_data: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          booked_at?: string | null
+          booking_reference?: string | null
+          created_at?: string
+          currency: string
+          flight_data: Json
+          flight_offer_id: string
+          id?: string
+          order_id?: string | null
+          status?: string
+          total_price: number
+          traveler_data: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          booked_at?: string | null
+          booking_reference?: string | null
+          created_at?: string
+          currency?: string
+          flight_data?: Json
+          flight_offer_id?: string
+          id?: string
+          order_id?: string | null
+          status?: string
+          total_price?: number
+          traveler_data?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
