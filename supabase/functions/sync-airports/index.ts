@@ -28,11 +28,22 @@ interface AmadeusLocation {
   };
 }
 
-// European country codes
-const EUROPEAN_COUNTRIES = [
-  'GB', 'FR', 'DE', 'ES', 'IT', 'NL', 'BE', 'CH', 'AT', 'PT', 'SE', 'NO', 
-  'DK', 'FI', 'IE', 'PL', 'CZ', 'HU', 'RO', 'GR', 'BG', 'HR', 'SK', 'SI',
-  'LT', 'LV', 'EE', 'LU', 'MT', 'CY', 'IS'
+// Major European cities to search for airports
+const EUROPEAN_CITIES = [
+  'London', 'Paris', 'Madrid', 'Rome', 'Berlin', 'Barcelona', 'Munich', 'Milan', 'Amsterdam',
+  'Vienna', 'Hamburg', 'Warsaw', 'Budapest', 'Bucharest', 'Prague', 'Brussels', 'Copenhagen',
+  'Stockholm', 'Helsinki', 'Dublin', 'Lisbon', 'Athens', 'Manchester', 'Birmingham', 'Glasgow',
+  'Edinburgh', 'Lyon', 'Marseille', 'Nice', 'Toulouse', 'Frankfurt', 'Cologne', 'Stuttgart',
+  'Düsseldorf', 'Dortmund', 'Essen', 'Bremen', 'Dresden', 'Leipzig', 'Hannover', 'Nuremberg',
+  'Seville', 'Valencia', 'Bilbao', 'Málaga', 'Alicante', 'Palma', 'Zaragoza', 'Naples', 'Turin',
+  'Venice', 'Florence', 'Bologna', 'Genoa', 'Catania', 'Palermo', 'Bari', 'Rotterdam', 'The Hague',
+  'Utrecht', 'Eindhoven', 'Geneva', 'Zurich', 'Basel', 'Bern', 'Kraków', 'Gdańsk', 'Porto',
+  'Bratislava', 'Cluj', 'Sofia', 'Zagreb', 'Belgrade', 'Thessaloniki', 'Oslo', 'Bergen', 'Gothenburg',
+  'Malmö', 'Tampere', 'Turku', 'Tallinn', 'Riga', 'Vilnius', 'Luxembourg', 'Valletta', 'Nicosia',
+  'Reykjavik', 'Bristol', 'Liverpool', 'Leeds', 'Newcastle', 'Cardiff', 'Belfast', 'Aberdeen',
+  'Cork', 'Galway', 'Salzburg', 'Innsbruck', 'Graz', 'Antwerp', 'Ghent', 'Brno', 'Ostrava',
+  'Wrocław', 'Poznań', 'Łódź', 'Timișoara', 'Constanța', 'Iași', 'Varna', 'Plovdiv', 'Split',
+  'Dubrovnik', 'Ljubljana', 'Maribor', 'Košice', 'Oulu', 'Jyväskylä', 'Trondheim', 'Stavanger'
 ];
 
 serve(async (req) => {
@@ -94,13 +105,16 @@ serve(async (req) => {
       longitude: number | null;
     }> = [];
 
-    // Fetch airports for each European country
-    for (const countryCode of EUROPEAN_COUNTRIES) {
-      console.log(`Fetching airports for country: ${countryCode}`);
+    const seenIataCodes = new Set<string>();
+
+    // Fetch airports for each European city with delay to avoid rate limiting
+    for (let i = 0; i < EUROPEAN_CITIES.length; i++) {
+      const city = EUROPEAN_CITIES[i];
+      console.log(`Fetching airports for city: ${city} (${i + 1}/${EUROPEAN_CITIES.length})`);
       
       try {
         const searchResponse = await fetch(
-          `${amadeusApiUrl}/v1/reference-data/locations?subType=AIRPORT&countryCode=${countryCode}&page[limit]=100`,
+          `${amadeusApiUrl}/v1/reference-data/locations?subType=AIRPORT&keyword=${encodeURIComponent(city)}&page[limit]=20`,
           {
             headers: {
               'Authorization': `Bearer ${tokenData.access_token}`,
@@ -112,30 +126,41 @@ serve(async (req) => {
           const searchData = await searchResponse.json();
           const locations: AmadeusLocation[] = searchData.data || [];
 
-          console.log(`Found ${locations.length} airports in ${countryCode}`);
+          console.log(`Found ${locations.length} airports near ${city}`);
 
           for (const location of locations) {
-            if (location.subType === 'AIRPORT' && location.iataCode) {
+            if (location.subType === 'AIRPORT' && location.iataCode && !seenIataCodes.has(location.iataCode)) {
+              seenIataCodes.add(location.iataCode);
               allAirports.push({
                 iata_code: location.iataCode,
                 name: location.name,
-                city: location.address?.cityName || 'Unknown',
-                country: location.address?.countryName || countryCode,
+                city: location.address?.cityName || city,
+                country: location.address?.countryName || 'Unknown',
                 region: location.address?.regionCode || null,
                 latitude: location.geoCode?.latitude || null,
                 longitude: location.geoCode?.longitude || null,
               });
             }
           }
+        } else if (searchResponse.status === 429) {
+          console.log('Rate limit reached, waiting 2 seconds...');
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          i--; // Retry this city
+          continue;
         } else {
-          console.error(`Failed to fetch airports for ${countryCode}: ${searchResponse.status}`);
+          console.error(`Failed to fetch airports for ${city}: ${searchResponse.status}`);
+        }
+        
+        // Add small delay between requests to avoid rate limiting
+        if (i < EUROPEAN_CITIES.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 150));
         }
       } catch (error) {
-        console.error(`Error fetching airports for ${countryCode}:`, error);
+        console.error(`Error fetching airports for ${city}:`, error instanceof Error ? error.message : 'Unknown error');
       }
     }
 
-    console.log(`Total airports fetched: ${allAirports.length}`);
+    console.log(`Total unique airports fetched: ${allAirports.length}`);
 
     // Upsert airports into database
     if (allAirports.length > 0) {
