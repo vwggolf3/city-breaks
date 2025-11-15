@@ -101,6 +101,28 @@ serve(async (req) => {
     const { flightOffer, travelers, contacts } = validationResult.data;
     console.log('Creating flight order for user:', user.id);
 
+    // Normalize inputs for Amadeus API
+    const normalizedTravelers = (travelers as any[]).map((t: any) => ({
+      ...t,
+      contact: {
+        ...t.contact,
+        phones: (t.contact?.phones || []).map((p: any) => ({
+          deviceType: p.deviceType ?? 'MOBILE',
+          countryCallingCode: p.countryCallingCode,
+          number: p.number,
+        })),
+      },
+    }));
+
+    const normalizedContacts = (contacts as any[]).map((c: any) => {
+      const copy: any = { ...c };
+      if (typeof copy.companyName === 'string') {
+        const sanitized = copy.companyName.replace(/[^A-Za-z0-9 ]/g, '').slice(0, 20);
+        if (sanitized && sanitized.length >= 2) copy.companyName = sanitized; else delete copy.companyName;
+      }
+      return copy;
+    });
+
     const apiKey = Deno.env.get('AMADEUS_TEST_API_KEY');
     const apiSecret = Deno.env.get('AMADEUS_TEST_API_SECRET');
     let apiUrl = Deno.env.get('AMADEUS_TEST_API_URL');
@@ -141,7 +163,7 @@ serve(async (req) => {
         data: {
           type: 'flight-order',
           flightOffers: [flightOffer],
-          travelers: travelers,
+          travelers: normalizedTravelers,
           remarks: {
             general: [
               {
@@ -154,7 +176,7 @@ serve(async (req) => {
             option: 'DELAY_TO_CANCEL',
             delay: '6D'
           },
-          contacts: contacts
+          contacts: normalizedContacts
         }
       }),
     });
