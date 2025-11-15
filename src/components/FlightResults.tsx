@@ -287,7 +287,7 @@ export const FlightResults = ({ flights, origin, destination }: FlightResultsPro
                   size="lg"
                   onClick={() => handleSelectFlight(flight)}
                 >
-                  Select Flight
+                  Book this flight
                 </Button>
               </div>
             </Card>
