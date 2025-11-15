@@ -31,9 +31,17 @@ interface AirportAutocompleteProps {
   value: string;
   onChange: (value: string) => void;
   onSelect?: (airport: Airport) => void;
+  label?: string;
+  placeholder?: string;
 }
 
-export const AirportAutocomplete = ({ value, onChange, onSelect }: AirportAutocompleteProps) => {
+export const AirportAutocomplete = ({ 
+  value, 
+  onChange, 
+  onSelect,
+  label = "Origin Airport",
+  placeholder = "e.g., Amsterdam, London, Paris..."
+}: AirportAutocompleteProps) => {
   const [open, setOpen] = useState(false);
   const [airports, setAirports] = useState<Airport[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -83,16 +91,16 @@ export const AirportAutocomplete = ({ value, onChange, onSelect }: AirportAutoco
 
   return (
     <div className="space-y-2">
-      <Label htmlFor="origin" className="flex items-center gap-2 text-foreground">
+      <Label htmlFor={label} className="flex items-center gap-2 text-foreground">
         <MapPin className="h-4 w-4 text-primary" />
-        Origin Airport
+        {label}
       </Label>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <div className="relative">
             <Input
-              id="origin"
-              placeholder="e.g., Amsterdam, London, Paris..."
+              id={label}
+              placeholder={placeholder}
               value={inputValue}
               onChange={(e) => {
                 setInputValue(e.target.value);
