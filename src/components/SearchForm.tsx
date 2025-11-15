@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Calendar, DollarSign, Clock } from "lucide-react";
 import { format, addDays, nextFriday, nextSunday } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,37 @@ export const SearchForm = () => {
   const [flightResults, setFlightResults] = useState<any[]>([]);
   const { toast } = useToast();
 
-  // Generate the next 4 upcoming weekends dynamically
+  // Detect and set closest airport on component mount
+  useEffect(() => {
+    const detectClosestAirport = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('get-closest-airport', {
+          body: {}
+        });
+
+        if (error) throw error;
+
+        if (data?.airport) {
+          const displayValue = `${data.airport.name} (${data.airport.iataCode})`;
+          setOrigin(displayValue);
+          
+          console.log(`Auto-detected closest airport: ${data.airport.city}, ${data.airport.country}`);
+          
+          if (data.distance) {
+            toast({
+              title: "Airport detected",
+              description: `Set origin to ${data.airport.city} Airport (${data.distance}km away)`,
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error detecting closest airport:', error);
+        // Silently fail - user can manually select airport
+      }
+    };
+
+    detectClosestAirport();
+  }, [toast]);
   const upcomingWeekends = useMemo(() => {
     const today = new Date();
     const weekends = [];
