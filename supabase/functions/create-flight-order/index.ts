@@ -102,10 +102,15 @@ serve(async (req) => {
 
     const apiKey = Deno.env.get('AMADEUS_TEST_API_KEY');
     const apiSecret = Deno.env.get('AMADEUS_TEST_API_SECRET');
-    const apiUrl = Deno.env.get('AMADEUS_TEST_API_URL');
+    let apiUrl = Deno.env.get('AMADEUS_TEST_API_URL');
 
     if (!apiKey || !apiSecret || !apiUrl) {
       throw new Error('Missing Amadeus API credentials');
+    }
+
+    // Ensure API URL has protocol
+    if (!apiUrl.startsWith('http://') && !apiUrl.startsWith('https://')) {
+      apiUrl = `https://${apiUrl}`;
     }
 
     // Get access token
