@@ -121,7 +121,7 @@ export const DestinationAutocomplete = ({ value, onChange, onSelect }: Destinati
         >
           <Command className="bg-transparent">
             <CommandList>
-              {airports.length === 0 && !isLoading && (
+              {airports.length === 0 && !isLoading && !selectedAirport && inputValue.length > 0 && (
                 <CommandEmpty>No airports found.</CommandEmpty>
               )}
               <CommandGroup>
