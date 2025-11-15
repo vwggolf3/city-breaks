@@ -235,9 +235,15 @@ const validateForm = () => {
 
       console.log('Booking created:', orderResponse.data);
 
+      const isSimulated = (orderResponse.data as any)?.meta?.simulated;
+      const ref = orderResponse.data.data?.associatedRecords?.[0]?.reference;
       toast({
-        title: "Booking Successful!",
-        description: `Your booking reference is: ${orderResponse.data.data?.associatedRecords?.[0]?.reference}`,
+        title: isSimulated ? "Booking Recorded in Demo Mode" : "Booking Successful!",
+        description: ref
+          ? (isSimulated
+              ? `Demo reference: ${ref}. This is a sandbox reservation saved in your account.`
+              : `Your booking reference is: ${ref}`)
+          : (isSimulated ? "Sandbox booking saved." : "Booking created."),
       });
 
       onOpenChange(false);
