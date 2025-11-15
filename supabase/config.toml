@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.get-airports]
 verify_jwt = false
+
+[functions.get-closest-airport]
+verify_jwt = false
