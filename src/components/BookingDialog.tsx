@@ -57,7 +57,7 @@ export const BookingDialog = ({ open, onOpenChange, flightOffer }: BookingDialog
       // Fetch profile data and email
       const { data: profile } = await supabase
         .from('profiles')
-        .select('first_name, last_name')
+        .select('first_name, last_name, gender')
         .eq('id', user.id)
         .single();
 
@@ -65,6 +65,7 @@ export const BookingDialog = ({ open, onOpenChange, flightOffer }: BookingDialog
         ...prev,
         firstName: profile?.first_name || '',
         lastName: profile?.last_name || '',
+        gender: profile?.gender || '',
         email: user.email || '',
       }));
     };
