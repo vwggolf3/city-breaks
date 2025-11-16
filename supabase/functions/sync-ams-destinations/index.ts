@@ -65,9 +65,9 @@ serve(async (req) => {
       throw new Error('Schiphol API credentials not configured');
     }
 
-    // Calculate next Thursday and Friday
+    // Calculate next Thursday, Friday, and Saturday
     const today = new Date();
-    const currentDay = today.getDay(); // 0 = Sunday, 4 = Thursday, 5 = Friday
+    const currentDay = today.getDay(); // 0 = Sunday, 4 = Thursday, 5 = Friday, 6 = Saturday
     
     // Days until next Thursday (4)
     const daysUntilThursday = (4 - currentDay + 7) % 7 || 7;
@@ -79,10 +79,16 @@ serve(async (req) => {
     const nextFriday = new Date(today);
     nextFriday.setDate(today.getDate() + daysUntilFriday);
 
+    // Days until next Saturday (6)
+    const daysUntilSaturday = (6 - currentDay + 7) % 7 || 7;
+    const nextSaturday = new Date(today);
+    nextSaturday.setDate(today.getDate() + daysUntilSaturday);
+
     const thursdayDate = nextThursday.toISOString().split('T')[0];
     const fridayDate = nextFriday.toISOString().split('T')[0];
+    const saturdayDate = nextSaturday.toISOString().split('T')[0];
 
-    console.log(`📅 Querying Schiphol for flights on ${thursdayDate} (Thu) and ${fridayDate} (Fri)`);
+    console.log(`📅 Querying Schiphol for flights on ${thursdayDate} (Thu), ${fridayDate} (Fri), and ${saturdayDate} (Sat)`);
 
     const destinationCodes = new Set<string>();
 
