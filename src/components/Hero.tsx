@@ -33,19 +33,10 @@ export const Hero = () => {
             Quick, affordable, and unforgettable trips at your fingertips.
           </p>
 
-          <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto pt-8">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-primary">200+</div>
-              <div className="text-sm text-muted-foreground">Destinations</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-primary">€99</div>
-              <div className="text-sm text-muted-foreground">Avg. Price</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-primary">10k+</div>
-              <div className="text-sm text-muted-foreground">Happy Travelers</div>
-            </div>
+          <div className="max-w-2xl mx-auto pt-8">
+            <p className="text-sm text-muted-foreground bg-muted/50 px-6 py-3 rounded-lg border border-border">
+              This is a prototype app, containing real prices and flights but no actual bookings will be made if you try the flow. It is still in experiment mode.
+            </p>
           </div>
         </div>
       </div>
