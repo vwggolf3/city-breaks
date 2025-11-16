@@ -224,15 +224,16 @@ serve(async (req) => {
       throw upsertError;
     }
 
-    console.log(`✅ Successfully synced ${enrichedDestinations.length} European Thu/Fri destinations from Amsterdam`);
+    console.log(`✅ Successfully synced ${enrichedDestinations.length} European Thu/Fri/Sat destinations from Amsterdam`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Synced ${enrichedDestinations.length} European Thursday/Friday destinations from Amsterdam`,
+        message: `Synced ${enrichedDestinations.length} European Thursday/Friday/Saturday destinations from Amsterdam`,
         destinations: enrichedDestinations.length,
         thursdayDate,
         fridayDate,
+        saturdayDate,
         destinationCodes: uniqueDestinations,
       }),
       {
