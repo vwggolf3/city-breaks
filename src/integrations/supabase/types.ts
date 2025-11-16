@@ -56,6 +56,42 @@ export type Database = {
         }
         Relationships: []
       }
+      ams_destinations: {
+        Row: {
+          city: string
+          country: string
+          created_at: string | null
+          currency: string | null
+          destination_code: string
+          id: string
+          last_price: number | null
+          last_synced_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          city: string
+          country: string
+          created_at?: string | null
+          currency?: string | null
+          destination_code: string
+          id?: string
+          last_price?: number | null
+          last_synced_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          city?: string
+          country?: string
+          created_at?: string | null
+          currency?: string | null
+          destination_code?: string
+          id?: string
+          last_price?: number | null
+          last_synced_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       favorite_destinations: {
         Row: {
           created_at: string | null

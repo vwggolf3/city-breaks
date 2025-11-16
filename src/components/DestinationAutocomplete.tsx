@@ -38,6 +38,13 @@ export const DestinationAutocomplete = ({ value, onChange, onSelect }: Destinati
 
   useEffect(() => {
     const debounceTimer = setTimeout(async () => {
+      // Special case: "anywhere" doesn't need airport search
+      if (inputValue.toLowerCase() === 'anywhere') {
+        setAirports([]);
+        setOpen(false);
+        return;
+      }
+
       // Only search if we don't have a selected airport or if the input has changed
       if (inputValue.length >= 1 && !selectedAirport) {
         setIsLoading(true);
@@ -90,14 +97,14 @@ export const DestinationAutocomplete = ({ value, onChange, onSelect }: Destinati
     <div className="space-y-2">
       <Label htmlFor="destination" className="flex items-center gap-2 text-foreground">
         <MapPin className="h-4 w-4 text-primary" />
-        Destination (European Cities)
+        Destination (or type "anywhere")
       </Label>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <div className="relative">
             <Input
               id="destination"
-              placeholder="e.g., Barcelona, Rome, Paris..."
+              placeholder='Type "anywhere" or a city name...'
               value={inputValue}
               onChange={handleInputChange}
               onFocus={() => {

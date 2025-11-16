@@ -20,7 +20,7 @@ import { FlightResults } from "./FlightResults";
 
 export const SearchForm = () => {
   const [origin, setOrigin] = useState("");
-  const [destination, setDestination] = useState("");
+  const [destination, setDestination] = useState("anywhere");
   const [budget, setBudget] = useState("");
   const [weekend, setWeekend] = useState("");
   const [departureTimePreference, setDepartureTimePreference] = useState("any");
@@ -134,32 +134,62 @@ export const SearchForm = () => {
       
       // Extract airport codes (last 3 characters in parentheses if present, otherwise use as-is)
       const originCode = origin.match(/\(([A-Z]{3})\)/)?.[1] || origin.toUpperCase().slice(-3);
-      const destCode = destination.match(/\(([A-Z]{3})\)/)?.[1] || destination.toUpperCase();
       
-      const { data, error } = await supabase.functions.invoke('search-flights', {
-        body: {
-          origin: originCode,
-          destination: destCode,
-          departureDate: selectedWeekend.departureDate,
-          returnDate: selectedWeekend.returnDate,
-          maxPrice: budget ? parseInt(budget) : undefined,
-          adults: 1,
-          departureTimePreference,
-          arrivalTimePreference,
-        }
-      });
+      // Check if destination is "anywhere" - use inspiration search
+      if (destination.toLowerCase() === 'anywhere') {
+        console.log('Using Flight Inspiration Search for "anywhere" destination');
+        
+        const { data, error } = await supabase.functions.invoke('search-inspiration-flights', {
+          body: {
+            origin: originCode,
+            departureDate: selectedWeekend.departureDate,
+            returnDate: selectedWeekend.returnDate,
+            maxPrice: budget ? parseInt(budget) : undefined,
+            departureTimePreference,
+            arrivalTimePreference,
+          }
+        });
 
-      if (error) throw error;
+        if (error) throw error;
 
-      console.log('Flight search results:', data);
-      
-      // Store the results
-      setFlightResults(data.data || []);
-      
-      toast({
-        title: "Search completed",
-        description: `Found ${data.data?.length || 0} flight options`,
-      });
+        console.log('Inspiration search results:', data);
+        
+        // Store the results (multiple destinations)
+        setFlightResults(data.data || []);
+        
+        toast({
+          title: "Search completed",
+          description: `Found ${data.data?.length || 0} destination options from ${originCode}`,
+        });
+      } else {
+        // Regular search for specific destination
+        const destCode = destination.match(/\(([A-Z]{3})\)/)?.[1] || destination.toUpperCase();
+        
+        const { data, error } = await supabase.functions.invoke('search-flights', {
+          body: {
+            origin: originCode,
+            destination: destCode,
+            departureDate: selectedWeekend.departureDate,
+            returnDate: selectedWeekend.returnDate,
+            maxPrice: budget ? parseInt(budget) : undefined,
+            adults: 1,
+            departureTimePreference,
+            arrivalTimePreference,
+          }
+        });
+
+        if (error) throw error;
+
+        console.log('Flight search results:', data);
+        
+        // Store the results
+        setFlightResults(data.data || []);
+        
+        toast({
+          title: "Search completed",
+          description: `Found ${data.data?.length || 0} flight options`,
+        });
+      }
 
     } catch (error) {
       console.error('Search error:', error);
