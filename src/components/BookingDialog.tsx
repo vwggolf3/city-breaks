@@ -251,9 +251,7 @@ const validateForm = () => {
           : (isSimulated ? "Sandbox booking saved." : "Booking created."),
       });
 
-      onOpenChange(false);
-      
-      // Reset form
+      // Keep dialog open so user can view API response
       setStep('details');
       setTraveler({
         id: "1",
