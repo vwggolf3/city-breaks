@@ -50,6 +50,9 @@ export const Header = () => {
           <Badge variant="outline" className="text-xs font-mono">
             v{APP_VERSION}
           </Badge>
+          <span className="text-xs text-muted-foreground hidden md:inline">
+            Prototype - Real prices & flights, no actual bookings
+          </span>
         </div>
 
         <div className="flex items-center gap-4">
