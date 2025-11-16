@@ -41,6 +41,7 @@ export const BookingDialog = ({ open, onOpenChange, flightOffer }: BookingDialog
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'details' | 'confirming' | 'booking'>('details');
+  const [apiResponse, setApiResponse] = useState<any>(null);
   const [traveler, setTraveler] = useState<Traveler>({
     id: "1",
     firstName: "",
@@ -162,6 +163,8 @@ const validateForm = () => {
         body: { flightOffer },
       });
 
+      setApiResponse({ step: 'price-confirmation', response: priceResponse });
+
       if (priceResponse.error) {
         const apiErr = (priceResponse.data as any)?.errors?.[0];
         throw new Error(apiErr ? `${apiErr.title}: ${apiErr.detail}` : priceResponse.error.message);
@@ -227,6 +230,8 @@ const validateForm = () => {
           contacts,
         },
       });
+
+      setApiResponse({ step: 'create-order', response: orderResponse });
 
       if (orderResponse.error) {
         const apiErr = (orderResponse.data as any)?.errors?.[0];
@@ -306,10 +311,22 @@ const validateForm = () => {
             </DialogHeader>
 
             {/* Test Environment Notice */}
-            <div className="bg-muted/50 border border-border rounded-lg p-3 text-sm">
+            <div className="bg-muted/50 border border-border rounded-lg p-3 text-sm space-y-3">
               <p className="text-muted-foreground">
                 <strong>Note:</strong> This is a test booking. Popular flights may show as unavailable due to limited test inventory.
               </p>
+              
+              {/* Raw API Response */}
+              {apiResponse && (
+                <details className="mt-2">
+                  <summary className="cursor-pointer text-xs font-medium text-muted-foreground hover:text-foreground">
+                    View Raw API Response ({apiResponse.step})
+                  </summary>
+                  <pre className="mt-2 p-2 bg-background rounded text-xs overflow-auto max-h-64 border">
+                    {JSON.stringify(apiResponse, null, 2)}
+                  </pre>
+                </details>
+              )}
             </div>
 
             {loading ? (
