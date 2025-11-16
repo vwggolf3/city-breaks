@@ -251,26 +251,8 @@ const validateForm = () => {
           : (isSimulated ? "Sandbox booking saved." : "Booking created."),
       });
 
-      // Keep dialog open so user can view API response
+      // Keep dialog open so user can view API response and preserve form values
       setStep('details');
-      setTraveler({
-        id: "1",
-        firstName: "",
-        lastName: "",
-        dateOfBirth: "",
-        gender: "",
-        email: "",
-        phoneCountryCode: "40",
-        phone: "",
-        passportNumber: "",
-        passportExpiry: "",
-        passportIssuanceCountry: "",
-        nationality: "",
-        addressLine: "",
-        city: "",
-        postalCode: "",
-        country: "",
-      });
     } catch (error: any) {
       console.error('Booking error:', error);
       
