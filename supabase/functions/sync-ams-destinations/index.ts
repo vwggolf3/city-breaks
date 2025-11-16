@@ -24,30 +24,6 @@ interface SchipholFlight {
   terminal?: number;
 }
 
-interface AmadeusTokenResponse {
-  access_token: string;
-  expires_in: number;
-}
-
-interface AmadeusAirport {
-  iataCode: string;
-  name: string;
-  address: {
-    cityName: string;
-    countryName: string;
-    countryCode: string;
-  };
-}
-
-// European country codes (ISO 3166-1 alpha-2)
-const EUROPEAN_COUNTRIES = new Set([
-  'AD', 'AL', 'AT', 'AX', 'BA', 'BE', 'BG', 'BY', 'CH', 'CZ', 'DE', 'DK', 
-  'EE', 'ES', 'FI', 'FO', 'FR', 'GB', 'GG', 'GI', 'GR', 'HR', 'HU', 'IE', 
-  'IM', 'IS', 'IT', 'JE', 'LI', 'LT', 'LU', 'LV', 'MC', 'MD', 'ME', 'MK', 
-  'MT', 'NL', 'NO', 'PL', 'PT', 'RO', 'RS', 'RU', 'SE', 'SI', 'SJ', 'SK', 
-  'SM', 'UA', 'VA', 'XK'
-]);
-
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -191,95 +167,25 @@ serve(async (req) => {
 
     console.log(`🌍 Found ${destinationAirlines.size} unique destinations`);
 
-    // Get Amadeus token to enrich European destinations only
-    const amadeus_apiKey = Deno.env.get('AMADEUS_TEST_API_KEY');
-    const amadeus_apiSecret = Deno.env.get('AMADEUS_TEST_API_SECRET');
-    const amadeus_apiUrl = Deno.env.get('AMADEUS_TEST_API_URL') || 'test.api.amadeus.com';
-
-    if (!amadeus_apiKey || !amadeus_apiSecret) {
-      throw new Error('Amadeus API credentials not configured');
-    }
-
-    console.log('🔑 Getting Amadeus OAuth token...');
-    const tokenResponse = await fetch(`https://${amadeus_apiUrl}/v1/security/oauth2/token`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: `grant_type=client_credentials&client_id=${amadeus_apiKey}&client_secret=${amadeus_apiSecret}`,
-    });
-
-    if (!tokenResponse.ok) {
-      const errorText = await tokenResponse.text();
-      console.error('❌ Amadeus token error:', errorText);
-      throw new Error(`Failed to get Amadeus token: ${tokenResponse.status}`);
-    }
-
-    const tokenData: AmadeusTokenResponse = await tokenResponse.json();
-
-    // Enrich destinations with city and country names, filter for Europe only
-    console.log(`📝 Enriching ${destinationAirlines.size} destinations with city/country names (European destinations only)...`);
-    const enrichedDestinations = [];
-    let enrichedCount = 0;
-    let skippedCount = 0;
-
-    for (const [destCode, airlines] of destinationAirlines.entries()) {
-      try {
-        const airportUrl = `https://${amadeus_apiUrl}/v1/reference-data/locations/${destCode}`;
-        const airportResponse = await fetch(airportUrl, {
-          headers: {
-            'Authorization': `Bearer ${tokenData.access_token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (airportResponse.ok) {
-          const airportData = await airportResponse.json();
-          const airport: AmadeusAirport = airportData.data;
-          
-          // Only include European destinations
-          const countryCode = airport.address?.countryCode;
-          if (countryCode && EUROPEAN_COUNTRIES.has(countryCode)) {
-            enrichedDestinations.push({
-              destination_code: destCode,
-              city: airport.address?.cityName || destCode,
-              country: airport.address?.countryName || 'Unknown',
-              airlines: Array.from(airlines),
-              last_synced_at: new Date().toISOString(),
-            });
-            enrichedCount++;
-            console.log(`   ✓ ${destCode} → ${airport.address?.cityName}, ${airport.address?.countryName} (Airlines: ${Array.from(airlines).join(', ')})`);
-          } else {
-            skippedCount++;
-            console.log(`   ⊗ ${destCode} → ${airport.address?.countryName || 'Unknown'} (Non-Europe, skipped)`);
-          }
-        } else if (airportResponse.status === 429) {
-          console.warn(`   ⚠️  Rate limited for ${destCode}, skipping remaining`);
-          break; // Stop enrichment if rate limited
-        } else {
-          console.warn(`   ⚠️  Could not enrich ${destCode}: ${airportResponse.status}`);
-        }
-        
-        // Add delay between Amadeus API calls to respect rate limits
-        await new Promise(resolve => setTimeout(resolve, 100));
-      } catch (error) {
-        console.error(`   ❌ Error enriching ${destCode}:`, error);
-      }
-    }
-
-    console.log(`✅ Enriched ${enrichedCount} European destinations, skipped ${skippedCount} non-European destinations`);
-
-    // Store in Supabase
+    // Store in Supabase - just the raw destination codes and airlines
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    console.log(`💾 Upserting ${enrichedDestinations.length} destinations to database...`);
+    console.log(`💾 Storing ${destinationAirlines.size} destinations with airlines to database...`);
+
+    const destinationsToStore = Array.from(destinationAirlines.entries()).map(([code, airlines]) => ({
+      destination_code: code,
+      city: code, // Placeholder - will enrich later
+      country: 'Unknown', // Placeholder - will enrich later
+      airlines: Array.from(airlines),
+      last_synced_at: new Date().toISOString(),
+    }));
 
     const { data: upsertData, error: upsertError } = await supabase
       .from('ams_destinations')
-      .upsert(enrichedDestinations, {
+      .upsert(destinationsToStore, {
         onConflict: 'destination_code',
         ignoreDuplicates: false,
       });
@@ -289,16 +195,17 @@ serve(async (req) => {
       throw upsertError;
     }
 
-    console.log(`✅ Successfully synced ${enrichedDestinations.length} European Thu/Fri/Sat destinations from Amsterdam`);
+    console.log(`✅ Successfully synced ${destinationsToStore.length} destinations from Amsterdam (Thu/Fri/Sat)`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Synced ${enrichedDestinations.length} European Thursday/Friday/Saturday destinations from Amsterdam`,
-        destinations: enrichedDestinations.length,
+        message: `Synced ${destinationsToStore.length} destinations from Amsterdam`,
+        destinations: destinationsToStore.length,
         thursdayDate,
         fridayDate,
         saturdayDate,
+        destinationCodes: Array.from(destinationAirlines.keys()),
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
