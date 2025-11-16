@@ -1,12 +1,7 @@
-import { Button } from "@/components/ui/button";
-import { Sparkles, ArrowRight } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import heroImage from "@/assets/hero-plane-sunset.jpg";
 
 export const Hero = () => {
-  const scrollToSearch = () => {
-    document.getElementById("search")?.scrollIntoView({ behavior: "smooth" });
-  };
-
   return (
     <section className="relative min-h-[600px] flex items-center justify-center overflow-hidden">
       {/* Background Image */}
@@ -37,25 +32,6 @@ export const Hero = () => {
             Discover spontaneous weekend getaways from your nearest airport. 
             Quick, affordable, and unforgettable trips at your fingertips.
           </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
-            <Button
-              size="xl"
-              variant="cta"
-              onClick={scrollToSearch}
-              className="min-w-[200px]"
-            >
-              Start Exploring
-              <ArrowRight className="h-5 w-5" />
-            </Button>
-            <Button
-              size="xl"
-              variant="hero"
-              className="min-w-[200px]"
-            >
-              How It Works
-            </Button>
-          </div>
 
           <div className="grid grid-cols-3 gap-8 max-w-2xl mx-auto pt-8">
             <div className="text-center">
