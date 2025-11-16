@@ -16,9 +16,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-interface Airport {
-  name: string;
-  iataCode: string;
+interface Destination {
+  destination_code: string;
   city: string;
   country: string;
 }
@@ -26,62 +25,67 @@ interface Airport {
 interface DestinationAutocompleteProps {
   value: string;
   onChange: (value: string) => void;
-  onSelect?: (airport: Airport) => void;
+  onSelect?: (destination: Destination) => void;
 }
 
 export const DestinationAutocomplete = ({ value, onChange, onSelect }: DestinationAutocompleteProps) => {
   const [open, setOpen] = useState(false);
-  const [airports, setAirports] = useState<Airport[]>([]);
+  const [destinations, setDestinations] = useState<Destination[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [inputValue, setInputValue] = useState(value);
-  const [selectedAirport, setSelectedAirport] = useState<Airport | null>(null);
+  const [selectedDestination, setSelectedDestination] = useState<Destination | null>(null);
 
   useEffect(() => {
     const debounceTimer = setTimeout(async () => {
-      // Special case: "anywhere" doesn't need airport search
+      // Special case: "anywhere" doesn't need destination search
       if (inputValue.toLowerCase() === 'anywhere') {
-        setAirports([]);
+        setDestinations([]);
         setOpen(false);
         return;
       }
 
-      // Only search if we don't have a selected airport or if the input has changed
-      if (inputValue.length >= 1 && !selectedAirport) {
+      // Only search if we don't have a selected destination or if the input has changed
+      if (inputValue.length >= 1 && !selectedDestination) {
         setIsLoading(true);
         try {
-          const { data, error } = await supabase.functions.invoke('get-airports', {
-            body: { query: inputValue }
-          });
+          // Query ams_destinations table for European destinations from Amsterdam
+          const { data, error } = await supabase
+            .from('ams_destinations')
+            .select('destination_code, city, country')
+            .or(`city.ilike.%${inputValue}%,country.ilike.%${inputValue}%,destination_code.ilike.%${inputValue}%`)
+            .neq('country', 'Unknown')
+            .order('city', { ascending: true })
+            .limit(20);
 
           if (error) throw error;
 
-          if (data?.data) {
-            setAirports(data.data);
+          if (data) {
+            setDestinations(data);
             setOpen(true);
           }
         } catch (error) {
-          console.error('Airport search error:', error);
-          setAirports([]);
+          console.error('Destination search error:', error);
+          setDestinations([]);
         } finally {
           setIsLoading(false);
         }
       } else if (inputValue.length === 0) {
-        setAirports([]);
-        setSelectedAirport(null);
+        setDestinations([]);
+        setSelectedDestination(null);
         setOpen(false);
       }
     }, 300);
 
     return () => clearTimeout(debounceTimer);
-  }, [inputValue, selectedAirport]);
+  }, [inputValue, selectedDestination]);
 
-  const handleSelect = (airport: Airport) => {
-    const displayValue = `${airport.name} (${airport.iataCode})`;
+  const handleSelect = (destination: Destination) => {
+    const displayValue = `${destination.city} (${destination.destination_code})`;
     setInputValue(displayValue);
-    setSelectedAirport(airport);
-    onChange(airport.iataCode);
+    setSelectedDestination(destination);
+    onChange(destination.destination_code);
     if (onSelect) {
-      onSelect(airport);
+      onSelect(destination);
     }
     setOpen(false);
   };
@@ -89,7 +93,7 @@ export const DestinationAutocomplete = ({ value, onChange, onSelect }: Destinati
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     setInputValue(newValue);
-    setSelectedAirport(null); // Clear selection when user starts typing
+    setSelectedDestination(null); // Clear selection when user starts typing
     onChange(newValue);
   };
 
@@ -108,7 +112,7 @@ export const DestinationAutocomplete = ({ value, onChange, onSelect }: Destinati
               value={inputValue}
               onChange={handleInputChange}
               onFocus={() => {
-                if (selectedAirport) {
+                if (selectedDestination) {
                   setOpen(true);
                 }
               }}
@@ -123,28 +127,28 @@ export const DestinationAutocomplete = ({ value, onChange, onSelect }: Destinati
           </div>
         </PopoverTrigger>
         <PopoverContent 
-          className="w-[--radix-popover-trigger-width] p-0 bg-popover border-border" 
+          className="w-[--radix-popover-trigger-width] p-0 bg-popover border-border z-50" 
           align="start"
         >
           <Command className="bg-transparent">
             <CommandList>
-              {airports.length === 0 && !isLoading && !selectedAirport && inputValue.length > 0 && (
-                <CommandEmpty>No airports found.</CommandEmpty>
+              {destinations.length === 0 && !isLoading && !selectedDestination && inputValue.length > 0 && inputValue.toLowerCase() !== 'anywhere' && (
+                <CommandEmpty>No destinations found. Only European destinations from Amsterdam are available.</CommandEmpty>
               )}
               <CommandGroup>
-                {airports.map((airport) => (
+                {destinations.map((destination) => (
                   <CommandItem
-                    key={airport.iataCode}
-                    onSelect={() => handleSelect(airport)}
+                    key={destination.destination_code}
+                    onSelect={() => handleSelect(destination)}
                     className="flex items-center gap-3 cursor-pointer hover:bg-accent"
                   >
                     <Plane className="h-4 w-4 text-muted-foreground" />
                     <div className="flex flex-col">
                       <span className="font-medium text-foreground">
-                        {airport.name}
+                        {destination.city}
                       </span>
                       <span className="text-sm text-muted-foreground">
-                        {airport.iataCode} • {airport.city}, {airport.country}
+                        {destination.destination_code} • {destination.country}
                       </span>
                     </div>
                   </CommandItem>
