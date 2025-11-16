@@ -20,7 +20,7 @@ export const Hero = () => {
             <span className="text-sm font-medium">Your weekend adventure awaits</span>
           </div>
 
-          <h1 className="text-5xl md:text-7xl font-bold text-foreground leading-tight">
+          <h1 className="text-3xl md:text-5xl font-bold text-foreground leading-tight">
             Find Your Perfect
             <br />
             <span className="bg-hero-gradient bg-clip-text text-transparent">
