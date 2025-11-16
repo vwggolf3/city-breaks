@@ -58,9 +58,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     );
 
     // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+
+      // Ensure profile exists and is synced even if user was already logged in (INITIAL_SESSION)
+      if (session?.user) {
+        const metadata = session.user.user_metadata;
+        try {
+          await supabase
+            .from("profiles")
+            .upsert({
+              id: session.user.id,
+              first_name: metadata?.first_name || metadata?.given_name || null,
+              last_name: metadata?.last_name || metadata?.family_name || null,
+              gender: metadata?.gender || null,
+              avatar_url: metadata?.avatar_url || metadata?.picture || null,
+            }, {
+              onConflict: "id"
+            });
+        } catch (e) {
+          console.error("Profile upsert on INITIAL_SESSION failed:", e);
+        }
+      }
+
       setIsLoading(false);
     });
 
