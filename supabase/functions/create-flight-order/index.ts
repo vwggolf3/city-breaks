@@ -195,19 +195,68 @@ serve(async (req) => {
     // Log the full payload for debugging
     console.log('Flight order payload:', JSON.stringify(orderPayload, null, 2));
 
-    // Create flight order
-    const orderResponse = await fetch(`${apiUrl}/v1/booking/flight-orders`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${tokenData.access_token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(orderPayload),
-    });
+    // Create flight order with retry logic
+    let orderResponse: Response | null = null;
+    let lastError: string | null = null;
+    const maxRetries = 3;
+    const baseDelay = 1000; // 1 second
 
-    if (!orderResponse.ok) {
-      const errorText = await orderResponse.text();
-      console.error('Order creation failed:', errorText);
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      if (attempt > 0) {
+        const delay = baseDelay * Math.pow(2, attempt - 1); // Exponential backoff: 1s, 2s, 4s
+        console.log(`Retry attempt ${attempt} after ${delay}ms delay`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+
+      try {
+        orderResponse = await fetch(`${apiUrl}/v1/booking/flight-orders`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${tokenData.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(orderPayload),
+        });
+
+        // If successful, break out of retry loop
+        if (orderResponse.ok) {
+          console.log(`Order created successfully on attempt ${attempt + 1}`);
+          break;
+        }
+
+        // Store error for potential retry
+        lastError = await orderResponse.text();
+        console.log(`Attempt ${attempt + 1} failed with status ${orderResponse.status}`);
+
+        // Check if this is a retryable error (5xx or network issues)
+        const isRetryable = orderResponse.status >= 500 && orderResponse.status < 600;
+        
+        // If not retryable or last attempt, exit loop
+        if (!isRetryable || attempt === maxRetries - 1) {
+          break;
+        }
+      } catch (networkError: any) {
+        console.error(`Network error on attempt ${attempt + 1}:`, networkError.message);
+        lastError = networkError.message;
+        
+        // On last attempt, throw the error
+        if (attempt === maxRetries - 1) {
+          throw new Error(`Network error after ${maxRetries} attempts: ${networkError.message}`);
+        }
+      }
+    }
+
+    if (!orderResponse || !orderResponse.ok) {
+      // Get error details, with fallback for null response
+      let errorText = lastError || 'Unknown error';
+      if (orderResponse) {
+        try {
+          errorText = await orderResponse.text();
+        } catch (e) {
+          console.error('Failed to read error response:', e);
+        }
+      }
+      console.error('Order creation failed after retries:', errorText);
 
       // Attempt graceful fallback in Amadeus Sandbox when inventory is unavailable (e.g., 38189)
       try {
@@ -266,7 +315,7 @@ serve(async (req) => {
       }
 
       return new Response(errorText, {
-        status: orderResponse.status,
+        status: orderResponse?.status || 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
