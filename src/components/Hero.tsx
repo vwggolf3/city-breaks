@@ -3,7 +3,7 @@ import heroImage from "@/assets/hero-plane-sunset.jpg";
 
 export const Hero = () => {
   return (
-    <section className="relative min-h-[400px] flex items-center justify-center overflow-hidden">
+    <section className="relative min-h-[250px] flex items-center justify-center overflow-hidden">
       {/* Background Image */}
       <div
         className="absolute inset-0 bg-cover bg-center"
@@ -13,9 +13,9 @@ export const Hero = () => {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 container mx-auto px-4 py-12 text-center">
-        <div className="max-w-4xl mx-auto space-y-8">
-          <h1 className="text-3xl md:text-5xl font-bold text-foreground leading-tight">
+      <div className="relative z-10 container mx-auto px-4 py-8 text-center">
+        <div className="max-w-4xl mx-auto space-y-4">
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground leading-tight">
             Find Your Perfect
             <br />
             <span className="bg-hero-gradient bg-clip-text text-transparent">
@@ -23,7 +23,7 @@ export const Hero = () => {
             </span>
           </h1>
 
-          <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-sm md:text-base text-muted-foreground max-w-2xl mx-auto">
             Discover spontaneous weekend getaways from your nearest airport. 
             Quick, affordable, and unforgettable trips at your fingertips.
           </p>
