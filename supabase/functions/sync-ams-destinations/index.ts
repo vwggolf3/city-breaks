@@ -92,47 +92,67 @@ serve(async (req) => {
 
     const destinationCodes = new Set<string>();
 
-    // Query Schiphol for Thursday, Friday, and Saturday
+    // Query Schiphol for Thursday, Friday, and Saturday with pagination
     for (const scheduleDate of [thursdayDate, fridayDate, saturdayDate]) {
-      console.log(`✈️  Fetching flights for ${scheduleDate}...`);
+      console.log(`✈️  Fetching ALL flights for ${scheduleDate}...`);
       
-      const schipholUrl = new URL('https://api.schiphol.nl/public-flights/flights');
-      schipholUrl.searchParams.append('scheduleDate', scheduleDate);
-      schipholUrl.searchParams.append('flightDirection', 'D'); // D = Departures
-      schipholUrl.searchParams.append('includedelays', 'false');
-      schipholUrl.searchParams.append('page', '0');
-      schipholUrl.searchParams.append('sort', '+scheduleTime');
+      let page = 0;
+      let totalFlightsForDay = 0;
+      let hasMorePages = true;
 
-      const schipholResponse = await fetch(schipholUrl.toString(), {
-        headers: {
-          'ResourceVersion': 'v4',
-          'app_id': schipholAppId,
-          'app_key': schipholAppKey,
-          'Accept': 'application/json',
-        },
-      });
+      while (hasMorePages) {
+        const schipholUrl = new URL('https://api.schiphol.nl/public-flights/flights');
+        schipholUrl.searchParams.append('scheduleDate', scheduleDate);
+        schipholUrl.searchParams.append('flightDirection', 'D'); // D = Departures
+        schipholUrl.searchParams.append('includedelays', 'false');
+        schipholUrl.searchParams.append('page', page.toString());
+        schipholUrl.searchParams.append('sort', '+scheduleTime');
 
-      if (!schipholResponse.ok) {
-        const errorText = await schipholResponse.text();
-        console.error(`❌ Schiphol API error for ${scheduleDate}:`, errorText);
-        throw new Error(`Schiphol API failed: ${schipholResponse.status}`);
+        console.log(`   📄 Fetching page ${page}...`);
+
+        const schipholResponse = await fetch(schipholUrl.toString(), {
+          headers: {
+            'ResourceVersion': 'v4',
+            'app_id': schipholAppId,
+            'app_key': schipholAppKey,
+            'Accept': 'application/json',
+          },
+        });
+
+        if (!schipholResponse.ok) {
+          const errorText = await schipholResponse.text();
+          console.error(`❌ Schiphol API error for ${scheduleDate} page ${page}:`, errorText);
+          throw new Error(`Schiphol API failed: ${schipholResponse.status}`);
+        }
+
+        const schipholData = await schipholResponse.json();
+        const flights: SchipholFlight[] = schipholData.flights || [];
+        
+        console.log(`      Found ${flights.length} flights on page ${page}`);
+
+        totalFlightsForDay += flights.length;
+
+        // Extract unique destination codes
+        flights.forEach((flight: SchipholFlight) => {
+          if (flight.route?.destinations && flight.route.destinations.length > 0) {
+            // Get the final destination (last in array)
+            const destination = flight.route.destinations[flight.route.destinations.length - 1];
+            if (destination && destination.length === 3) {
+              destinationCodes.add(destination);
+            }
+          }
+        });
+
+        // Check if there are more pages
+        // Schiphol typically returns 20 flights per page, if we get less, we're done
+        if (flights.length < 20) {
+          hasMorePages = false;
+        } else {
+          page++;
+        }
       }
 
-      const schipholData = await schipholResponse.json();
-      const flights: SchipholFlight[] = schipholData.flights || [];
-      
-      console.log(`   Found ${flights.length} flights on ${scheduleDate}`);
-
-      // Extract unique destination codes
-      flights.forEach((flight: SchipholFlight) => {
-        if (flight.route?.destinations && flight.route.destinations.length > 0) {
-          // Get the final destination (last in array)
-          const destination = flight.route.destinations[flight.route.destinations.length - 1];
-          if (destination && destination.length === 3) {
-            destinationCodes.add(destination);
-          }
-        }
-      });
+      console.log(`   ✅ Total flights for ${scheduleDate}: ${totalFlightsForDay}`);
     }
 
     console.log(`🌍 Found ${destinationCodes.size} unique destinations`);
