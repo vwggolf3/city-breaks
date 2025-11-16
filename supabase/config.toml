@@ -5,6 +5,3 @@ verify_jwt = true
 
 [functions.search-airports]
 verify_jwt = true
-
-[functions.sync-ams-destinations]
-verify_jwt = false
