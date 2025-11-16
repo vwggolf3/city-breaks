@@ -74,88 +74,86 @@ serve(async (req) => {
     const tokenData: AmadeusTokenResponse = await tokenResponse.json();
     console.log('OAuth token obtained successfully');
 
-    // Step 2: Get cached Amsterdam destinations from database to filter results
+    // Step 2: Get cached Amsterdam destinations from database
     const { data: amsDestinations, error: dbError } = await supabase
       .from('ams_destinations')
       .select('destination_code, city, country')
-      .order('last_price', { ascending: true });
+      .order('city', { ascending: true });
 
     if (dbError) {
       console.error('Error fetching Amsterdam destinations:', dbError);
+      throw new Error('Failed to fetch destinations from database');
     }
 
-    const europeanDestCodes = amsDestinations?.map(d => d.destination_code) || [];
-    console.log(`Found ${europeanDestCodes.length} European destinations in database`);
-
-    // Step 3: Call Flight Inspiration Search API
-    const searchParams = new URLSearchParams({
-      origin: origin,
-      departureDate,
-      oneWay: 'false',
-      duration: returnDate ? String(Math.ceil((new Date(returnDate).getTime() - new Date(departureDate).getTime()) / (1000 * 60 * 60 * 24))) : '2,3',
-      nonStop: 'true', // Only direct flights from Amsterdam
-      viewBy: 'DESTINATION',
-    });
-
-    if (maxPrice) {
-      searchParams.append('maxPrice', maxPrice.toString());
-    }
-
-    console.log('Calling Flight Inspiration Search with params:', searchParams.toString());
-
-    const inspirationResponse = await fetch(
-      `https://${apiUrl}/v1/shopping/flight-destinations?${searchParams.toString()}`,
-      {
-        headers: {
-          'Authorization': `Bearer ${tokenData.access_token}`,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
-
-    if (!inspirationResponse.ok) {
-      const errorText = await inspirationResponse.text();
-      console.error('Flight Inspiration Search error:', errorText);
-      throw new Error(`Flight Inspiration Search failed: ${inspirationResponse.status}`);
-    }
-
-    const inspirationData = await inspirationResponse.json();
-    let destinations = inspirationData.data || [];
-    
-    console.log(`Found ${destinations.length} destinations from Amadeus`);
-
-    // Filter to only European destinations if we have the list
-    if (europeanDestCodes.length > 0) {
-      destinations = destinations.filter((dest: any) => 
-        europeanDestCodes.includes(dest.destination)
+    if (!amsDestinations || amsDestinations.length === 0) {
+      return new Response(
+        JSON.stringify({
+          error: 'No destinations available',
+          details: 'Please run sync-ams-destinations function first to populate destinations'
+        }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
-      console.log(`Filtered to ${destinations.length} European destinations`);
     }
 
-    // Enrich with city/country names from our database
-    const enrichedDestinations = destinations.map((dest: any) => {
-      const dbDest = amsDestinations?.find(d => d.destination_code === dest.destination);
-      return {
-        ...dest,
-        destinationCity: dbDest?.city || dest.destination,
-        destinationCountry: dbDest?.country || 'Europe',
-      };
-    });
+    console.log(`Found ${amsDestinations.length} Thu/Fri destinations in database`);
 
-    // Apply time preferences if specified (filter by departure/arrival times)
-    let filteredDestinations = enrichedDestinations;
-    
-    if (departureTimePreference && departureTimePreference !== 'any') {
-      // Note: For inspiration search, we don't have specific flight times
-      // This would require a follow-up search for each destination
-      console.log(`Departure time preference "${departureTimePreference}" noted but not applied to inspiration results`);
+    // Step 3: Search Amadeus for prices to these specific destinations
+    const flightResults = [];
+
+    for (const dest of amsDestinations.slice(0, 20)) { // Limit to 20 destinations to avoid timeout
+      try {
+        const searchParams = new URLSearchParams({
+          originLocationCode: origin,
+          destinationLocationCode: dest.destination_code,
+          departureDate,
+          returnDate,
+          adults: '1',
+          currencyCode: 'EUR',
+          max: '1', // Just get cheapest flight for each destination
+          nonStop: 'true',
+        });
+
+        if (maxPrice) {
+          searchParams.append('maxPrice', maxPrice.toString());
+        }
+
+        console.log(`Searching flights to ${dest.city} (${dest.destination_code})...`);
+
+        const flightResponse = await fetch(
+          `https://${apiUrl}/v2/shopping/flight-offers?${searchParams.toString()}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${tokenData.access_token}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+        if (flightResponse.ok) {
+          const flightData = await flightResponse.json();
+          if (flightData.data && flightData.data.length > 0) {
+            // Add destination info to the flight offer
+            const enrichedOffer = {
+              ...flightData.data[0],
+              destinationCity: dest.city,
+              destinationCountry: dest.country,
+            };
+            flightResults.push(enrichedOffer);
+            console.log(`  ✓ Found flight to ${dest.city} at €${flightData.data[0].price.total}`);
+          }
+        }
+      } catch (error) {
+        console.error(`Error searching ${dest.destination_code}:`, error);
+        // Continue with other destinations
+      }
     }
+
+    console.log(`Found ${flightResults.length} total flight options`);
 
     return new Response(
       JSON.stringify({ 
-        ...inspirationData, 
-        data: filteredDestinations,
-        message: `Found ${filteredDestinations.length} weekend destinations from ${origin}`
+        data: flightResults,
+        message: `Found ${flightResults.length} weekend destinations from ${origin}`
       }), 
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -7,55 +7,36 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+interface SchipholFlight {
+  prefixIATA: string;
+  flightName: string;
+  scheduleDateTime: string;
+  flightDirection: string;
+  route: {
+    destinations: string[];
+    eu: string;
+    visa: boolean;
+  };
+  aircraftType?: {
+    iataMain: string;
+    iataSub: string;
+  };
+  terminal?: number;
+}
+
 interface AmadeusTokenResponse {
   access_token: string;
   expires_in: number;
 }
 
-interface AmadeusDestination {
-  type: string;
-  origin: string;
-  destination: string;
-  departureDate: string;
-  returnDate: string;
-  price: {
-    total: string;
+interface AmadeusAirport {
+  iataCode: string;
+  name: string;
+  address: {
+    cityName: string;
+    countryName: string;
   };
 }
-
-// Map IATA codes to cities (will expand based on actual API responses)
-const CITY_NAMES: Record<string, { city: string; country: string }> = {
-  'PAR': { city: 'Paris', country: 'France' },
-  'LON': { city: 'London', country: 'United Kingdom' },
-  'BCN': { city: 'Barcelona', country: 'Spain' },
-  'ROM': { city: 'Rome', country: 'Italy' },
-  'BER': { city: 'Berlin', country: 'Germany' },
-  'MAD': { city: 'Madrid', country: 'Spain' },
-  'VIE': { city: 'Vienna', country: 'Austria' },
-  'PRG': { city: 'Prague', country: 'Czech Republic' },
-  'DUB': { city: 'Dublin', country: 'Ireland' },
-  'LIS': { city: 'Lisbon', country: 'Portugal' },
-  'ATH': { city: 'Athens', country: 'Greece' },
-  'IST': { city: 'Istanbul', country: 'Turkey' },
-  'CPH': { city: 'Copenhagen', country: 'Denmark' },
-  'STO': { city: 'Stockholm', country: 'Sweden' },
-  'BRU': { city: 'Brussels', country: 'Belgium' },
-  'MIL': { city: 'Milan', country: 'Italy' },
-  'VCE': { city: 'Venice', country: 'Italy' },
-  'MUC': { city: 'Munich', country: 'Germany' },
-  'ZRH': { city: 'Zurich', country: 'Switzerland' },
-  'OSL': { city: 'Oslo', country: 'Norway' },
-  'HEL': { city: 'Helsinki', country: 'Finland' },
-  'WAW': { city: 'Warsaw', country: 'Poland' },
-  'BUD': { city: 'Budapest', country: 'Hungary' },
-  'EDI': { city: 'Edinburgh', country: 'United Kingdom' },
-  'FCO': { city: 'Rome', country: 'Italy' },
-  'CDG': { city: 'Paris', country: 'France' },
-  'ORY': { city: 'Paris', country: 'France' },
-  'LGW': { city: 'London', country: 'United Kingdom' },
-  'LHR': { city: 'London', country: 'United Kingdom' },
-  'STN': { city: 'London', country: 'United Kingdom' },
-};
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -64,119 +45,185 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Starting Amsterdam destinations sync...');
+    console.log('🔄 Starting Amsterdam Thursday/Friday destinations sync...');
 
-    // Get Amadeus credentials from environment
-    const apiKey = Deno.env.get('AMADEUS_TEST_API_KEY');
-    const apiSecret = Deno.env.get('AMADEUS_TEST_API_SECRET');
-    const apiUrl = Deno.env.get('AMADEUS_TEST_API_URL') || 'test.api.amadeus.com';
+    // Get Schiphol credentials
+    const schipholAppId = Deno.env.get('SCHIPHOL_APP_ID');
+    const schipholAppKey = Deno.env.get('SCHIPHOL_APP_KEY');
 
-    if (!apiKey || !apiSecret) {
+    if (!schipholAppId || !schipholAppKey) {
+      throw new Error('Schiphol API credentials not configured');
+    }
+
+    // Calculate next Thursday and Friday
+    const today = new Date();
+    const currentDay = today.getDay(); // 0 = Sunday, 4 = Thursday, 5 = Friday
+    
+    // Days until next Thursday (4)
+    const daysUntilThursday = (4 - currentDay + 7) % 7 || 7;
+    const nextThursday = new Date(today);
+    nextThursday.setDate(today.getDate() + daysUntilThursday);
+    
+    // Days until next Friday (5)
+    const daysUntilFriday = (5 - currentDay + 7) % 7 || 7;
+    const nextFriday = new Date(today);
+    nextFriday.setDate(today.getDate() + daysUntilFriday);
+
+    const thursdayDate = nextThursday.toISOString().split('T')[0];
+    const fridayDate = nextFriday.toISOString().split('T')[0];
+
+    console.log(`📅 Querying Schiphol for flights on ${thursdayDate} (Thu) and ${fridayDate} (Fri)`);
+
+    const destinationCodes = new Set<string>();
+
+    // Query Schiphol for both Thursday and Friday
+    for (const scheduleDate of [thursdayDate, fridayDate]) {
+      console.log(`✈️  Fetching flights for ${scheduleDate}...`);
+      
+      const schipholUrl = new URL('https://api.schiphol.nl/public-flights/flights');
+      schipholUrl.searchParams.append('scheduleDate', scheduleDate);
+      schipholUrl.searchParams.append('flightDirection', 'D'); // D = Departures
+      schipholUrl.searchParams.append('includedelays', 'false');
+      schipholUrl.searchParams.append('page', '0');
+      schipholUrl.searchParams.append('sort', '+scheduleTime');
+
+      const schipholResponse = await fetch(schipholUrl.toString(), {
+        headers: {
+          'ResourceVersion': 'v4',
+          'app_id': schipholAppId,
+          'app_key': schipholAppKey,
+          'Accept': 'application/json',
+        },
+      });
+
+      if (!schipholResponse.ok) {
+        const errorText = await schipholResponse.text();
+        console.error(`❌ Schiphol API error for ${scheduleDate}:`, errorText);
+        throw new Error(`Schiphol API failed: ${schipholResponse.status}`);
+      }
+
+      const schipholData = await schipholResponse.json();
+      const flights: SchipholFlight[] = schipholData.flights || [];
+      
+      console.log(`   Found ${flights.length} flights on ${scheduleDate}`);
+
+      // Extract unique destination codes
+      flights.forEach((flight: SchipholFlight) => {
+        if (flight.route?.destinations && flight.route.destinations.length > 0) {
+          // Get the final destination (last in array)
+          const destination = flight.route.destinations[flight.route.destinations.length - 1];
+          if (destination && destination.length === 3) {
+            destinationCodes.add(destination);
+          }
+        }
+      });
+    }
+
+    console.log(`🌍 Found ${destinationCodes.size} unique destinations`);
+    const uniqueDestinations = Array.from(destinationCodes);
+
+    // Get Amadeus token to enrich destinations with city/country names
+    const amadeus_apiKey = Deno.env.get('AMADEUS_TEST_API_KEY');
+    const amadeus_apiSecret = Deno.env.get('AMADEUS_TEST_API_SECRET');
+    const amadeus_apiUrl = Deno.env.get('AMADEUS_TEST_API_URL') || 'test.api.amadeus.com';
+
+    if (!amadeus_apiKey || !amadeus_apiSecret) {
       throw new Error('Amadeus API credentials not configured');
     }
 
-    // Step 1: Get OAuth token
-    console.log('Getting OAuth token from Amadeus...');
-    const tokenResponse = await fetch(`https://${apiUrl}/v1/security/oauth2/token`, {
+    console.log('🔑 Getting Amadeus OAuth token...');
+    const tokenResponse = await fetch(`https://${amadeus_apiUrl}/v1/security/oauth2/token`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: `grant_type=client_credentials&client_id=${apiKey}&client_secret=${apiSecret}`,
+      body: `grant_type=client_credentials&client_id=${amadeus_apiKey}&client_secret=${amadeus_apiSecret}`,
     });
 
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();
-      console.error('Token error:', errorText);
+      console.error('❌ Amadeus token error:', errorText);
       throw new Error(`Failed to get Amadeus token: ${tokenResponse.status}`);
     }
 
     const tokenData: AmadeusTokenResponse = await tokenResponse.json();
-    console.log('OAuth token obtained successfully');
 
-    // Step 2: Get next Friday/Sunday for Flight Inspiration Search
-    const today = new Date();
-    const daysUntilFriday = (5 - today.getDay() + 7) % 7 || 7;
-    const nextFriday = new Date(today);
-    nextFriday.setDate(today.getDate() + daysUntilFriday);
-    const nextSunday = new Date(nextFriday);
-    nextSunday.setDate(nextFriday.getDate() + 2);
+    // Enrich destinations with city and country names from Amadeus
+    console.log('📝 Enriching destinations with city/country names...');
+    const enrichedDestinations = [];
 
-    const departureDate = nextFriday.toISOString().split('T')[0];
-    const returnDate = nextSunday.toISOString().split('T')[0];
+    for (const destCode of uniqueDestinations) {
+      try {
+        const airportUrl = `https://${amadeus_apiUrl}/v1/reference-data/locations/${destCode}`;
+        const airportResponse = await fetch(airportUrl, {
+          headers: {
+            'Authorization': `Bearer ${tokenData.access_token}`,
+            'Content-Type': 'application/json',
+          },
+        });
 
-    // Step 3: Call Flight Inspiration Search API for Amsterdam
-    console.log('Calling Amadeus Flight Inspiration Search API...');
-    const searchParams = new URLSearchParams({
-      origin: 'AMS',
-      departureDate,
-      oneWay: 'false',
-      duration: '2,3',
-      nonStop: 'true', // Only direct flights
-      maxPrice: '500',
-      viewBy: 'DESTINATION',
-    });
-
-    const inspirationResponse = await fetch(
-      `https://${apiUrl}/v1/shopping/flight-destinations?${searchParams.toString()}`,
-      {
-        headers: {
-          'Authorization': `Bearer ${tokenData.access_token}`,
-          'Content-Type': 'application/json',
-        },
+        if (airportResponse.ok) {
+          const airportData = await airportResponse.json();
+          const airport: AmadeusAirport = airportData.data;
+          
+          enrichedDestinations.push({
+            destination_code: destCode,
+            city: airport.address?.cityName || destCode,
+            country: airport.address?.countryName || 'Unknown',
+            last_synced_at: new Date().toISOString(),
+          });
+          console.log(`   ✓ ${destCode} → ${airport.address?.cityName}, ${airport.address?.countryName}`);
+        } else {
+          // Fallback if airport lookup fails
+          console.warn(`   ⚠️  Could not enrich ${destCode}, using code as city name`);
+          enrichedDestinations.push({
+            destination_code: destCode,
+            city: destCode,
+            country: 'Unknown',
+            last_synced_at: new Date().toISOString(),
+          });
+        }
+      } catch (error) {
+        console.error(`   ❌ Error enriching ${destCode}:`, error);
+        enrichedDestinations.push({
+          destination_code: destCode,
+          city: destCode,
+          country: 'Unknown',
+          last_synced_at: new Date().toISOString(),
+        });
       }
-    );
-
-    if (!inspirationResponse.ok) {
-      const errorText = await inspirationResponse.text();
-      console.error('Flight Inspiration Search error:', errorText);
-      throw new Error(`Flight Inspiration Search failed: ${inspirationResponse.status}`);
     }
 
-    const inspirationData = await inspirationResponse.json();
-    const destinations = inspirationData.data || [];
-    console.log(`Found ${destinations.length} direct destinations from Amsterdam`);
-
-    // Step 4: Store in Supabase
+    // Store in Supabase
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    const destinationsToUpsert = destinations.map((dest: AmadeusDestination) => {
-      const destCode = dest.destination;
-      const cityInfo = CITY_NAMES[destCode] || { city: destCode, country: 'Unknown' };
-      
-      return {
-        destination_code: destCode,
-        city: cityInfo.city,
-        country: cityInfo.country,
-        last_price: parseFloat(dest.price.total),
-        currency: 'EUR',
-        last_synced_at: new Date().toISOString(),
-      };
-    });
+    console.log(`💾 Upserting ${enrichedDestinations.length} destinations to database...`);
 
-    // Upsert destinations
     const { data: upsertData, error: upsertError } = await supabase
       .from('ams_destinations')
-      .upsert(destinationsToUpsert, {
+      .upsert(enrichedDestinations, {
         onConflict: 'destination_code',
         ignoreDuplicates: false,
       });
 
     if (upsertError) {
-      console.error('Error upserting destinations:', upsertError);
+      console.error('❌ Error upserting destinations:', upsertError);
       throw upsertError;
     }
 
-    console.log(`Successfully synced ${destinationsToUpsert.length} destinations`);
+    console.log(`✅ Successfully synced ${enrichedDestinations.length} Thu/Fri destinations from Amsterdam`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Synced ${destinationsToUpsert.length} destinations from Amsterdam`,
-        destinations: destinationsToUpsert.length,
+        message: `Synced ${enrichedDestinations.length} Thursday/Friday destinations from Amsterdam`,
+        destinations: enrichedDestinations.length,
+        thursdayDate,
+        fridayDate,
+        destinationCodes: uniqueDestinations,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -184,11 +231,11 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error in sync-ams-destinations function:', error);
+    console.error('❌ Error in sync-ams-destinations function:', error);
     return new Response(
       JSON.stringify({
         error: error instanceof Error ? error.message : 'Unknown error',
-        details: 'Failed to sync Amsterdam destinations'
+        details: 'Failed to sync Amsterdam destinations from Schiphol'
       }),
       {
         status: 500,
