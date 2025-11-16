@@ -170,7 +170,8 @@ serve(async (req) => {
 
     for (const destCode of uniqueDestinations) {
       try {
-        const airportUrl = `https://${amadeus_apiUrl}/v1/reference-data/locations/${destCode}`;
+        // Use the Airport & City Search endpoint
+        const airportUrl = `https://${amadeus_apiUrl}/v1/reference-data/locations?subType=AIRPORT&keyword=${destCode}&page[limit]=1`;
         const airportResponse = await fetch(airportUrl, {
           headers: {
             'Authorization': `Bearer ${tokenData.access_token}`,
@@ -180,24 +181,29 @@ serve(async (req) => {
 
         if (airportResponse.ok) {
           const airportData = await airportResponse.json();
-          const airport: AmadeusAirport = airportData.data;
           
-          // Only include European destinations
-          const countryCode = airport.address?.countryCode;
-          if (countryCode && EUROPEAN_COUNTRIES.has(countryCode)) {
-            enrichedDestinations.push({
-              destination_code: destCode,
-              city: airport.address?.cityName || destCode,
-              country: airport.address?.countryName || 'Unknown',
-              last_synced_at: new Date().toISOString(),
-            });
-            console.log(`   ✓ ${destCode} → ${airport.address?.cityName}, ${airport.address?.countryName} (Europe)`);
+          if (airportData.data && airportData.data.length > 0) {
+            const airport = airportData.data[0];
+            const countryCode = airport.address?.countryCode;
+            
+            // Only include European destinations
+            if (countryCode && EUROPEAN_COUNTRIES.has(countryCode)) {
+              enrichedDestinations.push({
+                destination_code: destCode,
+                city: airport.address?.cityName || destCode,
+                country: airport.address?.countryName || 'Unknown',
+                last_synced_at: new Date().toISOString(),
+              });
+              console.log(`   ✓ ${destCode} → ${airport.address?.cityName}, ${airport.address?.countryName} (${countryCode}, Europe)`);
+            } else {
+              console.log(`   ⊗ ${destCode} → ${airport.address?.countryName} (${countryCode}, Non-Europe, skipped)`);
+            }
           } else {
-            console.log(`   ⊗ ${destCode} → ${airport.address?.countryName} (Non-Europe, skipped)`);
+            console.warn(`   ⚠️  No data found for ${destCode}, skipping`);
           }
         } else {
-          // Fallback - skip if we can't verify it's in Europe
-          console.warn(`   ⚠️  Could not enrich ${destCode}, skipping`);
+          const errorText = await airportResponse.text();
+          console.warn(`   ⚠️  Could not enrich ${destCode}: ${airportResponse.status} - ${errorText}`);
         }
       } catch (error) {
         console.error(`   ❌ Error enriching ${destCode}:`, error);
