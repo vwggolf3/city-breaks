@@ -93,24 +93,6 @@ const Index = () => {
         </div>
       </section>
 
-      <section className="py-16 px-4">
-        <div className="container mx-auto">
-          <div className="mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Popular Weekend Destinations
-            </h2>
-            <p className="text-lg text-muted-foreground">
-              Hand-picked destinations perfect for a quick weekend getaway
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {mockFlights.map((flight, index) => (
-              <FlightCard key={index} {...flight} />
-            ))}
-          </div>
-        </div>
-      </section>
 
       <footer className="bg-muted/50 py-8 px-4 mt-16 border-t border-border">
         <div className="container mx-auto text-center text-muted-foreground">
