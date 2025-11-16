@@ -92,8 +92,8 @@ serve(async (req) => {
 
     const destinationCodes = new Set<string>();
 
-    // Query Schiphol for both Thursday and Friday
-    for (const scheduleDate of [thursdayDate, fridayDate]) {
+    // Query Schiphol for Thursday, Friday, and Saturday
+    for (const scheduleDate of [thursdayDate, fridayDate, saturdayDate]) {
       console.log(`✈️  Fetching flights for ${scheduleDate}...`);
       
       const schipholUrl = new URL('https://api.schiphol.nl/public-flights/flights');
