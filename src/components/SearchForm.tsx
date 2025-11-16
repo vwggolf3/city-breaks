@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { Calendar, DollarSign, Clock } from "lucide-react";
+import { Calendar, DollarSign, Clock, Plane } from "lucide-react";
 import { format, addDays, nextFriday, nextSunday } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -14,12 +14,11 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { AirportAutocomplete } from "./AirportAutocomplete";
 import { DestinationAutocomplete } from "./DestinationAutocomplete";
 import { FlightResults } from "./FlightResults";
 
 export const SearchForm = () => {
-  const [origin, setOrigin] = useState("");
+  const origin = "AMS"; // Fixed to Amsterdam Schiphol
   const [destination, setDestination] = useState("anywhere");
   const [budget, setBudget] = useState("");
   const [weekend, setWeekend] = useState("");
@@ -28,58 +27,6 @@ export const SearchForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [flightResults, setFlightResults] = useState<any[]>([]);
   const { toast } = useToast();
-
-  // Detect and set closest airport on component mount
-  useEffect(() => {
-    const detectClosestAirport = async () => {
-      // Check if we already have a saved airport in localStorage
-      const savedAirport = localStorage.getItem('closestAirport');
-      
-      if (savedAirport) {
-        try {
-          const airportData = JSON.parse(savedAirport);
-          const displayValue = `${airportData.name} (${airportData.iataCode})`;
-          setOrigin(displayValue);
-          console.log('Loaded saved airport from localStorage:', airportData.city);
-          return;
-        } catch (error) {
-          console.error('Error parsing saved airport:', error);
-          // If parsing fails, continue to detect
-        }
-      }
-
-      // If no saved airport, detect from IP
-      try {
-        const { data, error } = await supabase.functions.invoke('get-closest-airport', {
-          body: {}
-        });
-
-        if (error) throw error;
-
-        if (data?.airport) {
-          const displayValue = `${data.airport.name} (${data.airport.iataCode})`;
-          setOrigin(displayValue);
-          
-          // Save to localStorage for future visits
-          localStorage.setItem('closestAirport', JSON.stringify(data.airport));
-          
-          console.log(`Auto-detected and saved closest airport: ${data.airport.city}, ${data.airport.country}`);
-          
-          if (data.distance) {
-            toast({
-              title: "Airport detected",
-              description: `Set origin to ${data.airport.city} Airport (${data.distance}km away)`,
-            });
-          }
-        }
-      } catch (error) {
-        console.error('Error detecting closest airport:', error);
-        // Silently fail - user can manually select airport
-      }
-    };
-
-    detectClosestAirport();
-  }, [toast]);
   const upcomingWeekends = useMemo(() => {
     const today = new Date();
     const weekends = [];
@@ -113,10 +60,10 @@ export const SearchForm = () => {
   }, []);
 
   const handleSearch = async () => {
-    if (!origin || !destination || !weekend) {
+    if (!destination || !weekend) {
       toast({
         title: "Missing information",
-        description: "Please fill in origin, destination, and select a weekend",
+        description: "Please select a destination and weekend dates",
         variant: "destructive",
       });
       return;
@@ -132,8 +79,7 @@ export const SearchForm = () => {
         throw new Error("Invalid weekend selection");
       }
       
-      // Extract airport codes (last 3 characters in parentheses if present, otherwise use as-is)
-      const originCode = origin.match(/\(([A-Z]{3})\)/)?.[1] || origin.toUpperCase().slice(-3);
+      const originCode = "AMS"; // Amsterdam Schiphol
       
       // Check if destination is "anywhere" - use inspiration search
       if (destination.toLowerCase() === 'anywhere') {
@@ -207,12 +153,16 @@ export const SearchForm = () => {
     <>
       <Card className="w-full max-w-4xl mx-auto p-8 shadow-elevated border-border/50 bg-card/80 backdrop-blur-sm">
         <div className="space-y-6">
-          <div className="grid gap-6 md:grid-cols-2">
-            <AirportAutocomplete
-              value={origin}
-              onChange={setOrigin}
-            />
+          {/* Amsterdam Origin Banner */}
+          <div className="flex items-center justify-center gap-3 p-4 rounded-lg bg-primary/10 border border-primary/20">
+            <Plane className="h-5 w-5 text-primary" />
+            <div className="text-center">
+              <p className="text-sm font-medium text-foreground">Flying from Amsterdam Schiphol (AMS)</p>
+              <p className="text-xs text-muted-foreground">All flights depart from Amsterdam</p>
+            </div>
+          </div>
 
+          <div className="grid gap-6 md:grid-cols-1">
             <DestinationAutocomplete
               value={destination}
               onChange={setDestination}
@@ -242,7 +192,7 @@ export const SearchForm = () => {
             <div className="space-y-2">
               <Label htmlFor="budget" className="flex items-center gap-2 text-foreground">
                 <DollarSign className="h-4 w-4 text-primary" />
-                Max Budget (per person)
+                Max Budget (EUR, per person)
               </Label>
               <Input
                 id="budget"
