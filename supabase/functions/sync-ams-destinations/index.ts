@@ -90,7 +90,8 @@ serve(async (req) => {
 
     console.log(`📅 Querying Schiphol for flights on ${thursdayDate} (Thu), ${fridayDate} (Fri), and ${saturdayDate} (Sat)`);
 
-    const destinationCodes = new Set<string>();
+    // Map to store destination -> Set of airlines
+    const destinationAirlines = new Map<string, Set<string>>();
 
     // Query Schiphol for Thursday, Friday, and Saturday with pagination
     for (const scheduleDate of [thursdayDate, fridayDate, saturdayDate]) {
@@ -99,6 +100,7 @@ serve(async (req) => {
       let page = 0;
       let totalFlightsForDay = 0;
       let hasMorePages = true;
+      let consecutiveErrors = 0;
 
       while (hasMorePages) {
         const schipholUrl = new URL('https://api.schiphol.nl/public-flights/flights');
@@ -108,57 +110,88 @@ serve(async (req) => {
         schipholUrl.searchParams.append('page', page.toString());
         schipholUrl.searchParams.append('sort', '+scheduleTime');
 
-        console.log(`   📄 Fetching page ${page}...`);
+        try {
+          const schipholResponse = await fetch(schipholUrl.toString(), {
+            headers: {
+              'ResourceVersion': 'v4',
+              'app_id': schipholAppId,
+              'app_key': schipholAppKey,
+              'Accept': 'application/json',
+            },
+          });
 
-        const schipholResponse = await fetch(schipholUrl.toString(), {
-          headers: {
-            'ResourceVersion': 'v4',
-            'app_id': schipholAppId,
-            'app_key': schipholAppKey,
-            'Accept': 'application/json',
-          },
-        });
-
-        if (!schipholResponse.ok) {
-          const errorText = await schipholResponse.text();
-          console.error(`❌ Schiphol API error for ${scheduleDate} page ${page}:`, errorText);
-          throw new Error(`Schiphol API failed: ${schipholResponse.status}`);
-        }
-
-        const schipholData = await schipholResponse.json();
-        const flights: SchipholFlight[] = schipholData.flights || [];
-        
-        console.log(`      Found ${flights.length} flights on page ${page}`);
-
-        totalFlightsForDay += flights.length;
-
-        // Extract unique destination codes
-        flights.forEach((flight: SchipholFlight) => {
-          if (flight.route?.destinations && flight.route.destinations.length > 0) {
-            // Get the final destination (last in array)
-            const destination = flight.route.destinations[flight.route.destinations.length - 1];
-            if (destination && destination.length === 3) {
-              destinationCodes.add(destination);
+          if (!schipholResponse.ok) {
+            if (schipholResponse.status === 429) {
+              console.warn(`   ⚠️  Rate limited on page ${page}, stopping this day`);
+              hasMorePages = false;
+              continue;
+            }
+            const errorText = await schipholResponse.text();
+            console.error(`❌ Schiphol API error for ${scheduleDate} page ${page}: ${errorText}`);
+            consecutiveErrors++;
+            if (consecutiveErrors >= 3) {
+              console.warn(`   ⚠️  Too many errors, stopping this day`);
+              hasMorePages = false;
+              continue;
             }
           }
-        });
 
-        // Check if there are more pages
-        // Schiphol typically returns 20 flights per page, if we get less, we're done
-        if (flights.length < 20) {
-          hasMorePages = false;
-        } else {
-          page++;
+          const schipholData = await schipholResponse.json();
+          const flights: SchipholFlight[] = schipholData.flights || [];
+          
+          totalFlightsForDay += flights.length;
+          consecutiveErrors = 0;
+
+          // Extract unique destination-airline pairs
+          flights.forEach((flight: SchipholFlight) => {
+            if (flight.route?.destinations && flight.route.destinations.length > 0) {
+              // Get the final destination (last in array)
+              const destination = flight.route.destinations[flight.route.destinations.length - 1];
+              const airline = flight.prefixIATA; // Airline IATA code
+              
+              if (destination && destination.length === 3 && airline) {
+                if (!destinationAirlines.has(destination)) {
+                  destinationAirlines.set(destination, new Set<string>());
+                }
+                destinationAirlines.get(destination)!.add(airline);
+              }
+            }
+          });
+
+          // Check if there are more pages (Schiphol returns 20 per page)
+          if (flights.length < 20) {
+            hasMorePages = false;
+          } else {
+            page++;
+            // Safety limit: max 50 pages per day to avoid timeouts and rate limits
+            if (page >= 50) {
+              console.warn(`   ⚠️  Reached max page limit (50) for ${scheduleDate}`);
+              hasMorePages = false;
+            }
+          }
+          
+          // Add small delay between pages to be nice to the API
+          if (hasMorePages) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+        } catch (error) {
+          console.error(`   ❌ Error fetching page ${page}:`, error);
+          consecutiveErrors++;
+          if (consecutiveErrors >= 3) {
+            hasMorePages = false;
+          }
         }
       }
 
       console.log(`   ✅ Total flights for ${scheduleDate}: ${totalFlightsForDay}`);
+      
+      // Add delay between days
+      await new Promise(resolve => setTimeout(resolve, 2000));
     }
 
-    console.log(`🌍 Found ${destinationCodes.size} unique destinations`);
-    const uniqueDestinations = Array.from(destinationCodes);
+    console.log(`🌍 Found ${destinationAirlines.size} unique destinations`);
 
-    // Get Amadeus token to enrich destinations with city/country names
+    // Get Amadeus token to enrich European destinations only
     const amadeus_apiKey = Deno.env.get('AMADEUS_TEST_API_KEY');
     const amadeus_apiSecret = Deno.env.get('AMADEUS_TEST_API_SECRET');
     const amadeus_apiUrl = Deno.env.get('AMADEUS_TEST_API_URL') || 'test.api.amadeus.com';
@@ -184,11 +217,13 @@ serve(async (req) => {
 
     const tokenData: AmadeusTokenResponse = await tokenResponse.json();
 
-    // Enrich destinations with city and country names from Amadeus
-    console.log('📝 Enriching destinations with city/country names...');
+    // Enrich destinations with city and country names, filter for Europe only
+    console.log(`📝 Enriching ${destinationAirlines.size} destinations with city/country names (European destinations only)...`);
     const enrichedDestinations = [];
+    let enrichedCount = 0;
+    let skippedCount = 0;
 
-    for (const destCode of uniqueDestinations) {
+    for (const [destCode, airlines] of destinationAirlines.entries()) {
       try {
         const airportUrl = `https://${amadeus_apiUrl}/v1/reference-data/locations/${destCode}`;
         const airportResponse = await fetch(airportUrl, {
@@ -209,20 +244,30 @@ serve(async (req) => {
               destination_code: destCode,
               city: airport.address?.cityName || destCode,
               country: airport.address?.countryName || 'Unknown',
+              airlines: Array.from(airlines),
               last_synced_at: new Date().toISOString(),
             });
-            console.log(`   ✓ ${destCode} → ${airport.address?.cityName}, ${airport.address?.countryName} (Europe)`);
+            enrichedCount++;
+            console.log(`   ✓ ${destCode} → ${airport.address?.cityName}, ${airport.address?.countryName} (Airlines: ${Array.from(airlines).join(', ')})`);
           } else {
-            console.log(`   ⊗ ${destCode} → ${airport.address?.countryName} (Non-Europe, skipped)`);
+            skippedCount++;
+            console.log(`   ⊗ ${destCode} → ${airport.address?.countryName || 'Unknown'} (Non-Europe, skipped)`);
           }
+        } else if (airportResponse.status === 429) {
+          console.warn(`   ⚠️  Rate limited for ${destCode}, skipping remaining`);
+          break; // Stop enrichment if rate limited
         } else {
-          // Fallback - skip if we can't verify it's in Europe
-          console.warn(`   ⚠️  Could not enrich ${destCode}, skipping`);
+          console.warn(`   ⚠️  Could not enrich ${destCode}: ${airportResponse.status}`);
         }
+        
+        // Add delay between Amadeus API calls to respect rate limits
+        await new Promise(resolve => setTimeout(resolve, 100));
       } catch (error) {
         console.error(`   ❌ Error enriching ${destCode}:`, error);
       }
     }
+
+    console.log(`✅ Enriched ${enrichedCount} European destinations, skipped ${skippedCount} non-European destinations`);
 
     // Store in Supabase
     const supabase = createClient(
@@ -254,7 +299,6 @@ serve(async (req) => {
         thursdayDate,
         fridayDate,
         saturdayDate,
-        destinationCodes: uniqueDestinations,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
