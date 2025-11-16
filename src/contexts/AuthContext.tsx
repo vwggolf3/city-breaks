@@ -3,6 +3,25 @@ import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 
+// Derive profile fields from OAuth metadata with sensible fallbacks
+function deriveProfileFromUser(user: User) {
+  const md: Record<string, any> = user.user_metadata || {};
+
+  let first_name: string | null = md.first_name || md.given_name || null;
+  let last_name: string | null = md.last_name || md.family_name || null;
+
+  const full = (md.full_name || md.name) as string | undefined;
+  if ((!first_name || !last_name) && full && typeof full === 'string') {
+    const parts = full.trim().split(/\s+/);
+    if (!first_name && parts.length > 0) first_name = parts[0] || null;
+    if (!last_name && parts.length > 1) last_name = parts.slice(1).join(' ') || null;
+  }
+
+  const gender: string | null = md.gender || null; // Only present if scope granted
+  const avatar_url: string | null = md.avatar_url || md.picture || null;
+
+  return { first_name, last_name, gender, avatar_url };
+}
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -29,17 +48,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (event === "SIGNED_IN" && session?.user) {
           // Sync profile data from OAuth providers (especially Google)
           setTimeout(() => {
-            const metadata = session.user.user_metadata;
-            console.log("Syncing profile for user:", session.user.id, metadata);
+            const derived = deriveProfileFromUser(session.user);
+            console.log("Syncing profile for user:", session.user.id, derived);
             
             supabase
               .from("profiles")
               .upsert({
                 id: session.user.id,
-                first_name: metadata?.first_name || metadata?.given_name || null,
-                last_name: metadata?.last_name || metadata?.family_name || null,
-                gender: metadata?.gender || null,
-                avatar_url: metadata?.avatar_url || metadata?.picture || null,
+                ...derived,
               }, {
                 onConflict: "id"
               })
@@ -64,16 +80,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       // Ensure profile exists and is synced even if user was already logged in (INITIAL_SESSION)
       if (session?.user) {
-        const metadata = session.user.user_metadata;
+        const derived = deriveProfileFromUser(session.user);
         try {
           await supabase
             .from("profiles")
             .upsert({
               id: session.user.id,
-              first_name: metadata?.first_name || metadata?.given_name || null,
-              last_name: metadata?.last_name || metadata?.family_name || null,
-              gender: metadata?.gender || null,
-              avatar_url: metadata?.avatar_url || metadata?.picture || null,
+              ...derived,
             }, {
               onConflict: "id"
             });
