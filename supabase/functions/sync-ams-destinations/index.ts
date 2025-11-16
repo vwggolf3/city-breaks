@@ -55,7 +55,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🔄 Starting Amsterdam Thursday/Friday European destinations sync...');
+    console.log('🔄 Starting Amsterdam Thu/Fri/Sat European destinations sync...');
 
     // Get Schiphol credentials
     const schipholAppId = Deno.env.get('SCHIPHOL_APP_ID');
