@@ -92,8 +92,8 @@ export const SearchForm = () => {
       currentFriday = today;
     }
 
-    // Generate next 4 weekends
-    for (let i = 0; i < 4; i++) {
+    // Generate next 10 weekends
+    for (let i = 0; i < 10; i++) {
       const friday = i === 0 ? currentFriday : addDays(currentFriday, i * 7);
       const sunday = addDays(friday, 2);
       
