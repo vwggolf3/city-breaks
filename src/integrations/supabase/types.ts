@@ -100,6 +100,8 @@ export type Database = {
           booking_reference: string | null
           created_at: string
           currency: string
+          encrypted_email: string | null
+          encrypted_phone: string | null
           encrypted_traveler_name: string | null
           flight_data: Json
           flight_offer_id: string
@@ -116,6 +118,8 @@ export type Database = {
           booking_reference?: string | null
           created_at?: string
           currency: string
+          encrypted_email?: string | null
+          encrypted_phone?: string | null
           encrypted_traveler_name?: string | null
           flight_data: Json
           flight_offer_id: string
@@ -132,6 +136,8 @@ export type Database = {
           booking_reference?: string | null
           created_at?: string
           currency?: string
+          encrypted_email?: string | null
+          encrypted_phone?: string | null
           encrypted_traveler_name?: string | null
           flight_data?: Json
           flight_offer_id?: string
@@ -340,6 +346,8 @@ export type Database = {
         Row: {
           booked_at: string | null
           booking_reference: string | null
+          contact_email: string | null
+          contact_phone: string | null
           created_at: string | null
           currency: string | null
           flight_data: Json | null
@@ -356,6 +364,8 @@ export type Database = {
         Insert: {
           booked_at?: string | null
           booking_reference?: string | null
+          contact_email?: never
+          contact_phone?: never
           created_at?: string | null
           currency?: string | null
           flight_data?: Json | null
@@ -372,6 +382,8 @@ export type Database = {
         Update: {
           booked_at?: string | null
           booking_reference?: string | null
+          contact_email?: never
+          contact_phone?: never
           created_at?: string | null
           currency?: string | null
           flight_data?: Json | null
