@@ -35,8 +35,18 @@ interface AmadeusAirport {
   address: {
     cityName: string;
     countryName: string;
+    countryCode: string;
   };
 }
+
+// European country codes (ISO 3166-1 alpha-2)
+const EUROPEAN_COUNTRIES = new Set([
+  'AD', 'AL', 'AT', 'AX', 'BA', 'BE', 'BG', 'BY', 'CH', 'CZ', 'DE', 'DK', 
+  'EE', 'ES', 'FI', 'FO', 'FR', 'GB', 'GG', 'GI', 'GR', 'HR', 'HU', 'IE', 
+  'IM', 'IS', 'IT', 'JE', 'LI', 'LT', 'LU', 'LV', 'MC', 'MD', 'ME', 'MK', 
+  'MT', 'NL', 'NO', 'PL', 'PT', 'RO', 'RS', 'RU', 'SE', 'SI', 'SJ', 'SK', 
+  'SM', 'UA', 'VA', 'XK'
+]);
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -45,7 +55,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🔄 Starting Amsterdam Thursday/Friday destinations sync...');
+    console.log('🔄 Starting Amsterdam Thursday/Friday European destinations sync...');
 
     // Get Schiphol credentials
     const schipholAppId = Deno.env.get('SCHIPHOL_APP_ID');
@@ -166,31 +176,25 @@ serve(async (req) => {
           const airportData = await airportResponse.json();
           const airport: AmadeusAirport = airportData.data;
           
-          enrichedDestinations.push({
-            destination_code: destCode,
-            city: airport.address?.cityName || destCode,
-            country: airport.address?.countryName || 'Unknown',
-            last_synced_at: new Date().toISOString(),
-          });
-          console.log(`   ✓ ${destCode} → ${airport.address?.cityName}, ${airport.address?.countryName}`);
+          // Only include European destinations
+          const countryCode = airport.address?.countryCode;
+          if (countryCode && EUROPEAN_COUNTRIES.has(countryCode)) {
+            enrichedDestinations.push({
+              destination_code: destCode,
+              city: airport.address?.cityName || destCode,
+              country: airport.address?.countryName || 'Unknown',
+              last_synced_at: new Date().toISOString(),
+            });
+            console.log(`   ✓ ${destCode} → ${airport.address?.cityName}, ${airport.address?.countryName} (Europe)`);
+          } else {
+            console.log(`   ⊗ ${destCode} → ${airport.address?.countryName} (Non-Europe, skipped)`);
+          }
         } else {
-          // Fallback if airport lookup fails
-          console.warn(`   ⚠️  Could not enrich ${destCode}, using code as city name`);
-          enrichedDestinations.push({
-            destination_code: destCode,
-            city: destCode,
-            country: 'Unknown',
-            last_synced_at: new Date().toISOString(),
-          });
+          // Fallback - skip if we can't verify it's in Europe
+          console.warn(`   ⚠️  Could not enrich ${destCode}, skipping`);
         }
       } catch (error) {
         console.error(`   ❌ Error enriching ${destCode}:`, error);
-        enrichedDestinations.push({
-          destination_code: destCode,
-          city: destCode,
-          country: 'Unknown',
-          last_synced_at: new Date().toISOString(),
-        });
       }
     }
 
@@ -214,12 +218,12 @@ serve(async (req) => {
       throw upsertError;
     }
 
-    console.log(`✅ Successfully synced ${enrichedDestinations.length} Thu/Fri destinations from Amsterdam`);
+    console.log(`✅ Successfully synced ${enrichedDestinations.length} European Thu/Fri destinations from Amsterdam`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Synced ${enrichedDestinations.length} Thursday/Friday destinations from Amsterdam`,
+        message: `Synced ${enrichedDestinations.length} European Thursday/Friday destinations from Amsterdam`,
         destinations: enrichedDestinations.length,
         thursdayDate,
         fridayDate,
