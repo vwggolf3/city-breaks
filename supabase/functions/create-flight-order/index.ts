@@ -72,6 +72,13 @@ serve(async (req) => {
       }
     });
 
+    // Use a second client with the user's JWT to preserve auth.uid() in RPC calls
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const authed = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+      auth: { autoRefreshToken: false, persistSession: false }
+    });
+
     const token = authHeader.replace('Bearer ', '');
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
 
@@ -270,24 +277,29 @@ serve(async (req) => {
           const simulatedOrderId = `DEMO-${(globalThis.crypto?.randomUUID?.() ?? `${Date.now()}`)}`;
           const simulatedReference = `ZZ${Math.floor(100000 + Math.random() * 900000)}`;
 
-          // Save a simulated booking to keep UX consistent in test env
-          const { error: insertError } = await supabase
-            .from('flight_bookings')
-            .insert({
-              user_id: user.id,
-              order_id: simulatedOrderId,
-              booking_reference: simulatedReference,
-              flight_offer_id: flightOffer.id,
-              flight_data: flightOffer,
-              traveler_data: travelers,
-              total_price: parseFloat(flightOffer.price.total),
-              currency: flightOffer.price.currency,
-              status: 'pending_sandbox',
-              booked_at: new Date().toISOString(),
-            });
+          // Save a simulated booking using secure RPC (encrypts contact data at rest)
+          const travelerName = `${(travelers?.[0]?.name?.firstName ?? '').toString()} ${(travelers?.[0]?.name?.lastName ?? '').toString()}`.trim() || 'Traveler';
+          const contactEmail = (travelers?.[0]?.contact?.emailAddress ?? '').toString();
+          const firstPhone = travelers?.[0]?.contact?.phones?.[0];
+          const contactPhone = firstPhone ? `${firstPhone.countryCallingCode ? `+${firstPhone.countryCallingCode}` : ''}${firstPhone.number}` : '';
 
-          if (insertError) {
-            console.error('Failed to save simulated booking to database:', insertError);
+          const { data: simId, error: rpcSimError } = await authed.rpc('create_encrypted_booking', {
+            p_user_id: user.id,
+            p_order_id: simulatedOrderId,
+            p_booking_reference: simulatedReference,
+            p_flight_offer_id: flightOffer.id,
+            p_flight_data: flightOffer,
+            p_traveler_name: travelerName,
+            p_contact_email: contactEmail,
+            p_contact_phone: contactPhone,
+            p_total_price: parseFloat(flightOffer.price.total),
+            p_currency: flightOffer.price.currency,
+            p_status: 'pending_sandbox',
+            p_booked_at: new Date().toISOString(),
+          });
+
+          if (rpcSimError) {
+            console.error('Failed to save simulated booking via RPC:', rpcSimError);
           }
 
           const simulatedResponse = {
@@ -323,24 +335,29 @@ serve(async (req) => {
     const orderData = await orderResponse.json();
     console.log('Successfully created flight order:', orderData.data?.id);
 
-    // Save booking to database
-    const { error: insertError } = await supabase
-      .from('flight_bookings')
-      .insert({
-        user_id: user.id,
-        order_id: orderData.data?.id,
-        booking_reference: orderData.data?.associatedRecords?.[0]?.reference,
-        flight_offer_id: flightOffer.id,
-        flight_data: flightOffer,
-        traveler_data: travelers,
-        total_price: parseFloat(flightOffer.price.total),
-        currency: flightOffer.price.currency,
-        status: 'confirmed',
-        booked_at: new Date().toISOString(),
-      });
+    // Save booking to database using secure RPC (encrypts sensitive contact data)
+    const travelerName = `${(travelers?.[0]?.name?.firstName ?? '').toString()} ${(travelers?.[0]?.name?.lastName ?? '').toString()}`.trim() || 'Traveler';
+    const contactEmail = (travelers?.[0]?.contact?.emailAddress ?? '').toString();
+    const firstPhone = travelers?.[0]?.contact?.phones?.[0];
+    const contactPhone = firstPhone ? `${firstPhone.countryCallingCode ? `+${firstPhone.countryCallingCode}` : ''}${firstPhone.number}` : '';
 
-    if (insertError) {
-      console.error('Failed to save booking to database:', insertError);
+    const { data: bookingId, error: rpcError } = await authed.rpc('create_encrypted_booking', {
+      p_user_id: user.id,
+      p_order_id: orderData.data?.id ?? null,
+      p_booking_reference: orderData.data?.associatedRecords?.[0]?.reference ?? null,
+      p_flight_offer_id: flightOffer.id,
+      p_flight_data: flightOffer,
+      p_traveler_name: travelerName,
+      p_contact_email: contactEmail,
+      p_contact_phone: contactPhone,
+      p_total_price: parseFloat(flightOffer.price.total),
+      p_currency: flightOffer.price.currency,
+      p_status: 'confirmed',
+      p_booked_at: new Date().toISOString(),
+    });
+
+    if (rpcError) {
+      console.error('Failed to save booking via RPC:', rpcError);
     }
 
     return new Response(JSON.stringify(orderData), {
