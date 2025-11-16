@@ -13,8 +13,8 @@ export const Hero = () => {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 container mx-auto px-4 py-8 text-center">
-        <div className="max-w-4xl mx-auto space-y-4">
+      <div className="relative z-10 container mx-auto px-4 py-6 text-center">
+        <div className="max-w-4xl mx-auto space-y-2">
           <h1 className="text-2xl md:text-3xl font-bold text-foreground leading-tight">
             Find Your Perfect
             <br />
