@@ -1,10 +1,23 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Validation schema for location coordinates
+const LocationSchema = z.object({
+  latitude: z.number()
+    .min(-90, { message: "Invalid latitude: must be between -90 and 90" })
+    .max(90, { message: "Invalid latitude: must be between -90 and 90" })
+    .optional(),
+  longitude: z.number()
+    .min(-180, { message: "Invalid longitude: must be between -180 and 180" })
+    .max(180, { message: "Invalid longitude: must be between -180 and 180" })
+    .optional()
+});
 
 // European airports with coordinates
 const EUROPEAN_AIRPORTS = [
@@ -60,6 +73,24 @@ serve(async (req) => {
   }
 
   try {
+    // Validate any provided coordinates from request body (if applicable)
+    const rawInput = await req.json().catch(() => ({}));
+    const validationResult = LocationSchema.safeParse(rawInput);
+    
+    if (!validationResult.success) {
+      console.error('Validation error:', validationResult.error.errors);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Invalid input parameters',
+          details: validationResult.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
     // Get client IP from request headers
     const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0] || 
                      req.headers.get('x-real-ip') || 

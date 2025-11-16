@@ -1,11 +1,21 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.81.1';
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Validation schema for airport search
+const AirportQuerySchema = z.object({
+  query: z.string()
+    .trim()
+    .max(100, { message: "Query must be less than 100 characters" })
+    .regex(/^[a-zA-Z0-9\s-]*$/, { message: "Query contains invalid characters" })
+    .optional()
+});
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -14,7 +24,26 @@ serve(async (req) => {
   }
 
   try {
-    const { query } = await req.json();
+    const rawInput = await req.json();
+    
+    // Validate input with Zod
+    const validationResult = AirportQuerySchema.safeParse(rawInput);
+    
+    if (!validationResult.success) {
+      console.error('Validation error:', validationResult.error.errors);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Invalid input parameters',
+          details: validationResult.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    const { query } = validationResult.data;
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
