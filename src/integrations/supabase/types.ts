@@ -58,6 +58,7 @@ export type Database = {
       }
       ams_destinations: {
         Row: {
+          airlines: string[] | null
           city: string
           country: string
           created_at: string | null
@@ -69,6 +70,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          airlines?: string[] | null
           city: string
           country: string
           created_at?: string | null
@@ -80,6 +82,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          airlines?: string[] | null
           city?: string
           country?: string
           created_at?: string | null
