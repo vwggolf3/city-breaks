@@ -30,20 +30,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           // Sync profile data from OAuth providers (especially Google)
           setTimeout(() => {
             const metadata = session.user.user_metadata;
-            if (metadata) {
-              supabase
-                .from("profiles")
-                .update({
-                  first_name: metadata.first_name || metadata.given_name || null,
-                  last_name: metadata.last_name || metadata.family_name || null,
-                  gender: metadata.gender || null,
-                  avatar_url: metadata.avatar_url || metadata.picture || null,
-                })
-                .eq("id", session.user.id)
-                .then(({ error }) => {
-                  if (error) console.error("Error syncing profile:", error);
-                });
-            }
+            console.log("Syncing profile for user:", session.user.id, metadata);
+            
+            supabase
+              .from("profiles")
+              .upsert({
+                id: session.user.id,
+                first_name: metadata?.first_name || metadata?.given_name || null,
+                last_name: metadata?.last_name || metadata?.family_name || null,
+                gender: metadata?.gender || null,
+                avatar_url: metadata?.avatar_url || metadata?.picture || null,
+              }, {
+                onConflict: "id"
+              })
+              .then(({ error }) => {
+                if (error) {
+                  console.error("Error syncing profile:", error);
+                } else {
+                  console.log("Profile synced successfully");
+                }
+              });
           }, 0);
           
           navigate("/");
