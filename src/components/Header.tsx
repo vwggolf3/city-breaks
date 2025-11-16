@@ -46,9 +46,9 @@ export const Header = () => {
           <div className="flex flex-col cursor-pointer" onClick={() => navigate("/")}>
             <div className="flex items-center gap-2">
               <Plane className="h-6 w-6 text-primary" />
-              <span className="font-bold text-lg">Weekend Flight Finder</span>
+              <span className="font-bold text-lg">Amsterdam Weekend Flights</span>
             </div>
-            <span className="text-xs text-muted-foreground ml-8">Your weekend adventure awaits</span>
+            <span className="text-xs text-muted-foreground ml-8">193 European destinations from AMS</span>
           </div>
           <Badge variant="outline" className="text-xs font-mono">
             v{APP_VERSION}

@@ -16,16 +16,16 @@ export const Hero = () => {
       <div className="relative z-10 container mx-auto px-4 py-6 text-center">
         <div className="max-w-4xl mx-auto space-y-2">
           <h1 className="text-2xl md:text-3xl font-bold text-foreground leading-tight">
-            Find Your Perfect
+            Discover Europe from
             <br />
             <span className="bg-hero-gradient bg-clip-text text-transparent">
-              Weekend Escape
+              Amsterdam Airport
             </span>
           </h1>
 
           <p className="text-sm md:text-base text-muted-foreground max-w-2xl mx-auto">
-            Discover spontaneous weekend getaways from your nearest airport. 
-            Quick, affordable, and unforgettable trips at your fingertips.
+            Weekend getaways to 193 European cities departing Thursday, Friday, or Saturday. 
+            Quick escapes from Amsterdam Schiphol at your fingertips.
           </p>
 
         </div>
