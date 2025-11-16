@@ -43,9 +43,12 @@ export const Header = () => {
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
-            <Plane className="h-6 w-6 text-primary" />
-            <span className="font-bold text-lg">Weekend Flight Finder</span>
+          <div className="flex flex-col cursor-pointer" onClick={() => navigate("/")}>
+            <div className="flex items-center gap-2">
+              <Plane className="h-6 w-6 text-primary" />
+              <span className="font-bold text-lg">Weekend Flight Finder</span>
+            </div>
+            <span className="text-xs text-muted-foreground ml-8">Your weekend adventure awaits</span>
           </div>
           <Badge variant="outline" className="text-xs font-mono">
             v{APP_VERSION}
