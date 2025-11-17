@@ -47,7 +47,6 @@ serve(async (req) => {
     const { data: destinations, error: destError } = await supabase
       .from('ams_destinations')
       .select('destination_code, city, country')
-      .neq('country', 'Unknown')
       .order('destination_code')
       .range(offsetDestinations, offsetDestinations + batchSize - 1);
 
@@ -65,7 +64,7 @@ serve(async (req) => {
     const weekendCombinations = [];
     const today = new Date();
     
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 4; i++) {
       const baseDate = new Date(today);
       baseDate.setDate(today.getDate() + (i * 7) + (4 - today.getDay() + 7) % 7); // Next Thursday
       
@@ -99,7 +98,7 @@ serve(async (req) => {
       });
     }
 
-    console.log(`📅 Generated ${weekendCombinations.length} weekend combinations (10 weekends × 3 types)`);
+    console.log(`📅 Generated ${weekendCombinations.length} weekend combinations (4 weekends × 3 types)`);
 
     // Get Amadeus token
     const amadeus_apiKey = Deno.env.get('AMADEUS_TEST_API_KEY');
