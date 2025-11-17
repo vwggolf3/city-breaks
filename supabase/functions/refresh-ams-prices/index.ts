@@ -34,7 +34,7 @@ serve(async (req) => {
     console.log('🔄 Starting Amsterdam prices batch refresh...');
 
     // Get batch parameters from request (for incremental processing)
-    const { batchSize = 10, offsetDestinations = 0 } = await req.json().catch(() => ({}));
+    const { batchSize = 1, offsetDestinations = 0 } = await req.json().catch(() => ({}));
 
     // Initialize Supabase
     const supabase = createClient(
@@ -64,7 +64,7 @@ serve(async (req) => {
     const weekendCombinations = [];
     const today = new Date();
     
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 2; i++) {
       const baseDate = new Date(today);
       baseDate.setDate(today.getDate() + (i * 7) + (4 - today.getDay() + 7) % 7); // Next Thursday
       
@@ -98,7 +98,7 @@ serve(async (req) => {
       });
     }
 
-    console.log(`📅 Generated ${weekendCombinations.length} weekend combinations (4 weekends × 3 types)`);
+    console.log(`📅 Generated ${weekendCombinations.length} weekend combinations (2 weekends × 3 types)`);
 
     // Get Amadeus token
     const amadeus_apiKey = Deno.env.get('AMADEUS_TEST_API_KEY');
@@ -125,7 +125,6 @@ serve(async (req) => {
     // Process each destination × weekend combination
     let successCount = 0;
     let errorCount = 0;
-    const priceRecords = [];
 
     for (const dest of destinations) {
       console.log(`\n🎯 Processing ${dest.city} (${dest.destination_code})...`);
@@ -165,7 +164,8 @@ serve(async (req) => {
                 });
               });
 
-              priceRecords.push({
+              // Store immediately to avoid data loss on timeout
+              const priceRecord = {
                 destination_code: dest.destination_code,
                 departure_date: weekend.departure,
                 return_date: weekend.return,
@@ -175,10 +175,22 @@ serve(async (req) => {
                 airlines: Array.from(airlines),
                 flight_data: cheapest,
                 last_updated_at: new Date().toISOString(),
-              });
+              };
 
-              successCount++;
-              console.log(`   ✓ ${weekend.type}: €${cheapest.price.total}`);
+              const { error: upsertError } = await supabase
+                .from('ams_flight_prices')
+                .upsert(priceRecord, {
+                  onConflict: 'destination_code,departure_date,return_date',
+                  ignoreDuplicates: false,
+                });
+
+              if (upsertError) {
+                console.error(`   ❌ Error storing ${weekend.type}:`, upsertError);
+                errorCount++;
+              } else {
+                successCount++;
+                console.log(`   ✓ ${weekend.type}: €${cheapest.price.total} [saved]`);
+              }
             } else {
               console.log(`   ○ ${weekend.type}: No flights found`);
             }
@@ -204,29 +216,10 @@ serve(async (req) => {
       await new Promise(resolve => setTimeout(resolve, 200));
     }
 
-    // Bulk upsert all price records
-    if (priceRecords.length > 0) {
-      console.log(`\n💾 Storing ${priceRecords.length} price records...`);
-      
-      const { error: upsertError } = await supabase
-        .from('ams_flight_prices')
-        .upsert(priceRecords, {
-          onConflict: 'destination_code,departure_date,return_date',
-          ignoreDuplicates: false,
-        });
-
-      if (upsertError) {
-        console.error('❌ Error storing prices:', upsertError);
-        throw upsertError;
-      }
-
-      console.log('✅ Prices stored successfully');
-    }
-
     const totalProcessed = destinations.length;
     const nextOffset = offsetDestinations + batchSize;
     
-    console.log(`\n📊 Batch complete: ${successCount} prices found, ${errorCount} errors`);
+    console.log(`\n📊 Batch complete: ${successCount} prices saved, ${errorCount} errors`);
     console.log(`📍 Next batch starts at offset: ${nextOffset}`);
 
     return new Response(
@@ -238,9 +231,8 @@ serve(async (req) => {
           nextOffset,
         },
         results: {
-          pricesFound: successCount,
+          pricesSaved: successCount,
           errors: errorCount,
-          stored: priceRecords.length,
         },
         message: `Processed ${totalProcessed} destinations with ${weekendCombinations.length} weekend combinations`,
       }),
