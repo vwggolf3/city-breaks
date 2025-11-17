@@ -34,7 +34,7 @@ serve(async (req) => {
     console.log('🔄 Starting Amsterdam prices batch refresh...');
 
     // Get batch parameters from request (for incremental processing)
-    const { batchSize = 1, offsetDestinations = 0 } = await req.json().catch(() => ({}));
+    const { batchSize = 1 } = await req.json().catch(() => ({}));
 
     // Initialize Supabase
     const supabase = createClient(
@@ -42,23 +42,59 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    // Fetch destinations (batch processing to avoid timeouts)
-    console.log(`📍 Fetching destinations (batch: ${batchSize}, offset: ${offsetDestinations})...`);
-    const { data: destinations, error: destError } = await supabase
+    // Find destinations that need updating (no prices or old prices)
+    console.log(`📍 Finding destinations that need price updates...`);
+    
+    // Get all destination codes
+    const { data: allDests, error: destError } = await supabase
       .from('ams_destinations')
       .select('destination_code, city, country')
-      .order('destination_code')
-      .range(offsetDestinations, offsetDestinations + batchSize - 1);
+      .order('destination_code');
 
     if (destError) throw destError;
-    if (!destinations || destinations.length === 0) {
+    if (!allDests || allDests.length === 0) {
       return new Response(
-        JSON.stringify({ message: 'No more destinations to process', completed: true }),
+        JSON.stringify({ message: 'No destinations found', completed: true }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`✅ Processing ${destinations.length} destinations`);
+    // Get destinations that already have recent prices (within last 24 hours)
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { data: recentPrices } = await supabase
+      .from('ams_flight_prices')
+      .select('destination_code')
+      .gte('last_updated_at', oneDayAgo);
+
+    const processedCodes = new Set(recentPrices?.map(p => p.destination_code) || []);
+    
+    // Filter to destinations that need updates
+    const destinationsToProcess = allDests.filter(d => !processedCodes.has(d.destination_code));
+    
+    if (destinationsToProcess.length === 0) {
+      console.log('✅ All destinations have been updated in the last 24 hours');
+      return new Response(
+        JSON.stringify({ message: 'All destinations up to date', completed: true }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Take only the batch size
+    const destinations = destinationsToProcess.slice(0, batchSize);
+    console.log(`📍 Processing ${destinations.length} destinations (${destinationsToProcess.length} remaining)`);
+    
+    const { data: _unused, error: _unusedError } = await supabase
+      .from('ams_destinations')
+      .select('destination_code')
+      .limit(1);
+
+    if (destError) throw destError;
+    if (!allDests || allDests.length === 0) {
+      return new Response(
+        JSON.stringify({ message: 'No destinations found', completed: true }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Calculate next 10 weekends with all combinations
     const weekendCombinations = [];
@@ -217,24 +253,23 @@ serve(async (req) => {
     }
 
     const totalProcessed = destinations.length;
-    const nextOffset = offsetDestinations + batchSize;
+    const remainingDestinations = destinationsToProcess.length - batchSize;
     
     console.log(`\n📊 Batch complete: ${successCount} prices saved, ${errorCount} errors`);
-    console.log(`📍 Next batch starts at offset: ${nextOffset}`);
+    console.log(`📍 Remaining destinations: ${Math.max(0, remainingDestinations)}`);
 
     return new Response(
       JSON.stringify({
         success: true,
         batch: {
           processed: totalProcessed,
-          offset: offsetDestinations,
-          nextOffset,
+          remaining: Math.max(0, remainingDestinations),
         },
         results: {
           pricesSaved: successCount,
           errors: errorCount,
         },
-        message: `Processed ${totalProcessed} destinations with ${weekendCombinations.length} weekend combinations`,
+        message: `Processed ${totalProcessed} destinations with ${weekendCombinations.length} weekend combinations. ${Math.max(0, remainingDestinations)} destinations remaining.`,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
