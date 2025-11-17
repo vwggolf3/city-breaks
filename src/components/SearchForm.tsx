@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { DestinationAutocomplete } from "./DestinationAutocomplete";
 import { FlightResults } from "./FlightResults";
+import { useCachedFlightPrices } from "@/hooks/useCachedFlightPrices";
 
 export const SearchForm = () => {
   const origin = "AMS"; // Fixed to Amsterdam Schiphol
@@ -27,6 +28,7 @@ export const SearchForm = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [flightResults, setFlightResults] = useState<any[]>([]);
   const { toast } = useToast();
+  const { queryCachedPrices } = useCachedFlightPrices();
   const upcomingWeekends = useMemo(() => {
     const today = new Date();
     const weekends = [];
@@ -81,9 +83,28 @@ export const SearchForm = () => {
       
       const originCode = "AMS"; // Amsterdam Schiphol
       
-      // Check if destination is "anywhere" - use inspiration search
+      // Check if destination is "anywhere" - try cached prices first
       if (destination.toLowerCase() === 'anywhere') {
-        console.log('Using Flight Inspiration Search for "anywhere" destination');
+        console.log('Checking cached prices for "anywhere" destination');
+        
+        const cachedResult = await queryCachedPrices({
+          departureDate: selectedWeekend.departureDate,
+          returnDate: selectedWeekend.returnDate,
+          maxPrice: budget ? parseInt(budget) : undefined,
+        });
+
+        if (cachedResult.data && cachedResult.data.length > 0) {
+          console.log('Using cached prices:', cachedResult.data);
+          setFlightResults(cachedResult.data);
+          toast({
+            title: "Results from cache",
+            description: `Found ${cachedResult.data.length} cached destinations`,
+          });
+          setIsLoading(false);
+          return;
+        }
+
+        console.log('No cached data, using live Flight Inspiration Search');
         
         const { data, error } = await supabase.functions.invoke('search-inspiration-flights', {
           body: {
