@@ -34,6 +34,7 @@ interface FlightOffer {
   itineraries: Itinerary[];
   numberOfBookableSeats?: number;
   validatingAirlineCodes?: string[];
+  lastUpdatedAt?: string;
 }
 
 interface FlightResultsProps {
@@ -169,7 +170,14 @@ export const FlightResults = ({ flights, origin, destination }: FlightResultsPro
                     <div className="text-3xl font-bold text-primary">
                       {flight.price.currency} {parseFloat(flight.price.total).toFixed(2)}
                     </div>
-                    <div className="text-sm text-muted-foreground">per person</div>
+                    <div className="text-sm text-muted-foreground">
+                      per person
+                      {flight.lastUpdatedAt && (
+                        <span className="block text-xs mt-1">
+                          Price updated: {format(parseISO(flight.lastUpdatedAt), 'MMM d, HH:mm')}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="text-right">
                     <Badge variant="outline" className="mb-2">

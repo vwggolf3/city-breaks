@@ -81,83 +81,30 @@ export const SearchForm = () => {
         throw new Error("Invalid weekend selection");
       }
       
-      const originCode = "AMS"; // Amsterdam Schiphol
+      console.log('Querying cached flight prices from database');
       
-      // Check if destination is "anywhere" - try cached prices first
-      if (destination.toLowerCase() === 'anywhere') {
-        console.log('Checking cached prices for "anywhere" destination');
-        
-        const cachedResult = await queryCachedPrices({
-          departureDate: selectedWeekend.departureDate,
-          returnDate: selectedWeekend.returnDate,
-          maxPrice: budget ? parseInt(budget) : undefined,
-        });
+      // Always query cached prices from database
+      const cachedResult = await queryCachedPrices({
+        departureDate: selectedWeekend.departureDate,
+        returnDate: selectedWeekend.returnDate,
+        maxPrice: budget ? parseInt(budget) : undefined,
+        destination: destination.toLowerCase() === 'anywhere' ? undefined : destination,
+      });
 
-        if (cachedResult.data && cachedResult.data.length > 0) {
-          console.log('Using cached prices:', cachedResult.data);
-          setFlightResults(cachedResult.data);
-          toast({
-            title: "Results from cache",
-            description: `Found ${cachedResult.data.length} cached destinations`,
-          });
-          setIsLoading(false);
-          return;
-        }
-
-        console.log('No cached data, using live Flight Inspiration Search');
-        
-        const { data, error } = await supabase.functions.invoke('search-inspiration-flights', {
-          body: {
-            origin: originCode,
-            departureDate: selectedWeekend.departureDate,
-            returnDate: selectedWeekend.returnDate,
-            maxPrice: budget ? parseInt(budget) : undefined,
-            departureTimePreference,
-            arrivalTimePreference,
-          }
-        });
-
-        if (error) throw error;
-
-        console.log('Inspiration search results:', data);
-        
-        // Store the results (multiple destinations)
-        setFlightResults(data.data || []);
-        
+      if (cachedResult.data && cachedResult.data.length > 0) {
+        console.log('Found cached prices:', cachedResult.data);
+        setFlightResults(cachedResult.data);
         toast({
-          title: "Search completed",
-          description: `Found ${data.data?.length || 0} destination options from ${originCode}`,
+          title: "Cached flight options found",
+          description: `Showing ${cachedResult.data.length} available destinations with stored prices`,
         });
       } else {
-        // Regular search for specific destination
-        const destCode = destination.match(/\(([A-Z]{3})\)/)?.[1] || destination.toUpperCase();
-        
-        const { data, error } = await supabase.functions.invoke('search-flights', {
-          body: {
-            origin: originCode,
-            destination: destCode,
-            departureDate: selectedWeekend.departureDate,
-            returnDate: selectedWeekend.returnDate,
-            maxPrice: budget ? parseInt(budget) : undefined,
-            adults: 1,
-            departureTimePreference,
-            arrivalTimePreference,
-          }
-        });
-
-        if (error) throw error;
-
-        console.log('Flight search results:', data);
-        
-        // Store the results
-        setFlightResults(data.data || []);
-        
         toast({
-          title: "Search completed",
-          description: `Found ${data.data?.length || 0} flight options`,
+          title: "No cached prices available",
+          description: "No stored prices found for your search criteria. The system is continuously updating prices in the background.",
+          variant: "destructive",
         });
       }
-
     } catch (error) {
       console.error('Search error:', error);
       toast({
