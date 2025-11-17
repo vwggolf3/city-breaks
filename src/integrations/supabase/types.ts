@@ -95,6 +95,48 @@ export type Database = {
         }
         Relationships: []
       }
+      ams_flight_prices: {
+        Row: {
+          airlines: string[] | null
+          created_at: string | null
+          currency: string | null
+          departure_date: string
+          destination_code: string
+          flight_data: Json | null
+          id: string
+          last_updated_at: string | null
+          price: number | null
+          return_date: string
+          weekend_type: string
+        }
+        Insert: {
+          airlines?: string[] | null
+          created_at?: string | null
+          currency?: string | null
+          departure_date: string
+          destination_code: string
+          flight_data?: Json | null
+          id?: string
+          last_updated_at?: string | null
+          price?: number | null
+          return_date: string
+          weekend_type: string
+        }
+        Update: {
+          airlines?: string[] | null
+          created_at?: string | null
+          currency?: string | null
+          departure_date?: string
+          destination_code?: string
+          flight_data?: Json | null
+          id?: string
+          last_updated_at?: string | null
+          price?: number | null
+          return_date?: string
+          weekend_type?: string
+        }
+        Relationships: []
+      }
       favorite_destinations: {
         Row: {
           created_at: string | null
