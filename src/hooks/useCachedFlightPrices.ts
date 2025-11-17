@@ -60,7 +60,7 @@ export const useCachedFlightPrices = () => {
           validatingAirlineCodes: price.airlines || [],
           destinationCity: dest?.city,
           destinationCountry: dest?.country,
-          lastUpdated: price.last_updated_at,
+          lastUpdatedAt: price.last_updated_at,
         };
       });
 
