@@ -10,6 +10,7 @@ import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
 import Favorites from "./pages/Favorites";
 import SavedSearches from "./pages/SavedSearches";
+import PriceMonitor from "./pages/PriceMonitor";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -45,6 +46,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <SavedSearches />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/price-monitor"
+              element={
+                <ProtectedRoute>
+                  <PriceMonitor />
                 </ProtectedRoute>
               }
             />
