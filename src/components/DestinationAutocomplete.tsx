@@ -53,7 +53,6 @@ export const DestinationAutocomplete = ({ value, onChange, onSelect }: Destinati
             .from('ams_destinations')
             .select('destination_code, city, country')
             .or(`city.ilike.%${inputValue}%,country.ilike.%${inputValue}%,destination_code.ilike.%${inputValue}%`)
-            .neq('country', 'Unknown')
             .order('city', { ascending: true })
             .limit(20);
 
