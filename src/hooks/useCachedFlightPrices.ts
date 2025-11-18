@@ -48,6 +48,28 @@ export const useCachedFlightPrices = () => {
       const transformedData = priceData?.map((price) => {
         const dest = destMap.get(price.destination_code);
         const flightData = price.flight_data as any;
+        
+        // Use the original Amadeus flight offer structure if available
+        // This preserves all required fields like travelerPricings
+        if (flightData && typeof flightData === 'object' && flightData.type === 'flight-offer') {
+          return {
+            ...flightData,
+            // Mark as cached and add our custom metadata
+            source: "cached",
+            destinationCity: dest?.city,
+            destinationCountry: dest?.country,
+            lastUpdatedAt: price.last_updated_at,
+            // Override with our cached price if available
+            price: price.price ? {
+              ...flightData.price,
+              currency: price.currency || flightData.price?.currency || "EUR",
+              total: price.price.toString(),
+              base: price.price.toString(),
+            } : flightData.price,
+          };
+        }
+        
+        // Fallback for legacy data structure
         return {
           type: "flight-offer",
           id: price.id,

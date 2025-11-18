@@ -159,19 +159,27 @@ const validateForm = () => {
         throw new Error('You must be logged in to book a flight');
       }
 
-      const priceResponse = await supabase.functions.invoke('confirm-flight-price', {
-        body: { flightOffer },
-      });
+      let confirmedOffer = flightOffer;
 
-      setApiResponse({ step: 'price-confirmation', response: priceResponse });
+      // Only confirm price for live Amadeus offers, skip for cached flights
+      if (flightOffer.source !== 'cached') {
+        const priceResponse = await supabase.functions.invoke('confirm-flight-price', {
+          body: { flightOffer },
+        });
 
-      if (priceResponse.error) {
-        const apiErr = (priceResponse.data as any)?.errors?.[0];
-        throw new Error(apiErr ? `${apiErr.title}: ${apiErr.detail}` : priceResponse.error.message);
+        setApiResponse({ step: 'price-confirmation', response: priceResponse });
+
+        if (priceResponse.error) {
+          const apiErr = (priceResponse.data as any)?.errors?.[0];
+          throw new Error(apiErr ? `${apiErr.title}: ${apiErr.detail}` : priceResponse.error.message);
+        }
+
+        console.log('Price confirmed:', priceResponse.data);
+        confirmedOffer = priceResponse.data.data.flightOffers[0];
+      } else {
+        console.log('Using cached flight, skipping price confirmation');
+        setApiResponse({ step: 'price-confirmation', response: { data: 'Skipped for cached flight' } });
       }
-
-      console.log('Price confirmed:', priceResponse.data);
-      const confirmedOffer = priceResponse.data.data.flightOffers[0];
 
       // Step 2: Create flight order
       setStep('booking');
