@@ -47,6 +47,7 @@ export const useCachedFlightPrices = () => {
       // Transform cached data to match Amadeus flight offer format
       const transformedData = priceData?.map((price) => {
         const dest = destMap.get(price.destination_code);
+        const flightData = price.flight_data as any;
         return {
           type: "flight-offer",
           id: price.id,
@@ -56,7 +57,7 @@ export const useCachedFlightPrices = () => {
             total: price.price?.toString() || "0",
             base: price.price?.toString() || "0",
           },
-          itineraries: price.flight_data,
+          itineraries: flightData?.itineraries || [],
           validatingAirlineCodes: price.airlines || [],
           destinationCity: dest?.city,
           destinationCountry: dest?.country,
