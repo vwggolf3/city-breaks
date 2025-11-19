@@ -322,238 +322,238 @@ const validateForm = () => {
               </div>
             ) : (
               <div className="space-y-6">
-            {/* Flight Summary */}
-            <div className="p-4 bg-muted/50 rounded-lg space-y-2">
-              <h3 className="font-semibold">Flight Summary</h3>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Route:</span>
-                <span>{flightOffer.itineraries[0].segments[0].departure.iataCode} → {flightOffer.itineraries[0].segments[flightOffer.itineraries[0].segments.length - 1].arrival.iataCode}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Total Price:</span>
-                <span className="font-semibold">
-                  {confirmedOffer ? (
-                    <>{confirmedOffer.price.currency} {confirmedOffer.price.total}</>
-                  ) : (
-                    <>{flightOffer.price.currency} {flightOffer.price.total}</>
+                {/* Flight Summary */}
+                <div className="p-4 bg-muted/50 rounded-lg space-y-2">
+                  <h3 className="font-semibold">Flight Summary</h3>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Route:</span>
+                    <span>{flightOffer.itineraries[0].segments[0].departure.iataCode} → {flightOffer.itineraries[0].segments[flightOffer.itineraries[0].segments.length - 1].arrival.iataCode}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Total Price:</span>
+                    <span className="font-semibold">
+                      {confirmedOffer ? (
+                        <>{confirmedOffer.price.currency} {confirmedOffer.price.total}</>
+                      ) : (
+                        <>{flightOffer.price.currency} {flightOffer.price.total}</>
+                      )}
+                    </span>
+                  </div>
+                  {confirmedOffer && confirmedOffer.price.total !== flightOffer.price.total && (
+                    <div className="text-xs text-muted-foreground">
+                      Price confirmed with Amadeus API
+                    </div>
                   )}
-                </span>
-              </div>
-              {confirmedOffer && confirmedOffer.price.total !== flightOffer.price.total && (
-                <div className="text-xs text-muted-foreground">
-                  Price confirmed with Amadeus API
                 </div>
-              )}
-            </div>
 
-            {/* Traveler Information Form */}
-            <div className="space-y-4">
-              <h3 className="font-semibold">Traveler Information</h3>
+                {/* Traveler Information Form */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold">Traveler Information</h3>
               
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name *</Label>
-                  <Input
-                    id="firstName"
-                    value={traveler.firstName}
-                    onChange={(e) => handleInputChange('firstName', e.target.value)}
-                    placeholder="John"
-                  />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="firstName">First Name *</Label>
+                      <Input
+                        id="firstName"
+                        value={traveler.firstName}
+                        onChange={(e) => handleInputChange('firstName', e.target.value)}
+                        placeholder="John"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="lastName">Last Name *</Label>
+                      <Input
+                        id="lastName"
+                        value={traveler.lastName}
+                        onChange={(e) => handleInputChange('lastName', e.target.value)}
+                        placeholder="Doe"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="dateOfBirth">Date of Birth *</Label>
+                      <Input
+                        id="dateOfBirth"
+                        type="date"
+                        value={traveler.dateOfBirth}
+                        onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
+                        max={new Date().toISOString().split('T')[0]}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="gender">Gender *</Label>
+                      <Select value={traveler.gender} onValueChange={(value) => handleInputChange('gender', value)}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select gender" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="MALE">Male</SelectItem>
+                          <SelectItem value="FEMALE">Female</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email *</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={traveler.email}
+                      onChange={(e) => handleInputChange('email', e.target.value)}
+                      placeholder="john.doe@example.com"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="phoneCountryCode">Country Code *</Label>
+                      <Select value={traveler.phoneCountryCode} onValueChange={(value) => handleInputChange('phoneCountryCode', value)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="40">+40 (RO)</SelectItem>
+                          <SelectItem value="1">+1 (US/CA)</SelectItem>
+                          <SelectItem value="44">+44 (UK)</SelectItem>
+                          <SelectItem value="33">+33 (FR)</SelectItem>
+                          <SelectItem value="49">+49 (DE)</SelectItem>
+                          <SelectItem value="34">+34 (ES)</SelectItem>
+                          <SelectItem value="39">+39 (IT)</SelectItem>
+                          <SelectItem value="31">+31 (NL)</SelectItem>
+                          <SelectItem value="32">+32 (BE)</SelectItem>
+                          <SelectItem value="41">+41 (CH)</SelectItem>
+                          <SelectItem value="351">+351 (PT)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2 col-span-2">
+                      <Label htmlFor="phone">Phone Number *</Label>
+                      <Input
+                        id="phone"
+                        type="tel"
+                        value={traveler.phone}
+                        onChange={(e) => handleInputChange('phone', e.target.value)}
+                        placeholder="555-555-5555"
+                      />
+                    </div>
+                  </div>
+
+                  <h3 className="font-semibold pt-4">Passport Details</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="passportNumber">Passport Number *</Label>
+                      <Input
+                        id="passportNumber"
+                        value={traveler.passportNumber}
+                        onChange={(e) => handleInputChange('passportNumber', e.target.value.trim())}
+                        placeholder="123456789"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="passportExpiry">Passport Expiry *</Label>
+                      <Input
+                        id="passportExpiry"
+                        type="date"
+                        value={traveler.passportExpiry}
+                        min={new Date().toISOString().split('T')[0]}
+                        onChange={(e) => handleInputChange('passportExpiry', e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="passportIssuanceCountry">Issuance Country (2 letters, e.g., RO) *</Label>
+                      <Input
+                        id="passportIssuanceCountry"
+                        value={traveler.passportIssuanceCountry}
+                        maxLength={2}
+                        onChange={(e) => handleInputChange('passportIssuanceCountry', e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0,2))}
+                        placeholder="RO"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="nationality">Nationality (2 letters, e.g., RO) *</Label>
+                      <Input
+                        id="nationality"
+                        value={traveler.nationality}
+                        maxLength={2}
+                        onChange={(e) => handleInputChange('nationality', e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0,2))}
+                        placeholder="RO"
+                      />
+                    </div>
+                  </div>
+
+                  <h3 className="font-semibold pt-4">Contact Address</h3>
+                  <div className="space-y-2">
+                    <Label htmlFor="addressLine">Street Address *</Label>
+                    <Input
+                      id="addressLine"
+                      value={traveler.addressLine}
+                      onChange={(e) => handleInputChange('addressLine', e.target.value)}
+                      placeholder="123 Main Street, Apt 4B"
+                      maxLength={200}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="city">City *</Label>
+                      <Input
+                        id="city"
+                        value={traveler.city}
+                        onChange={(e) => handleInputChange('city', e.target.value)}
+                        placeholder="New York"
+                        maxLength={100}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="postalCode">Postal Code *</Label>
+                      <Input
+                        id="postalCode"
+                        value={traveler.postalCode}
+                        onChange={(e) => handleInputChange('postalCode', e.target.value)}
+                        placeholder="10001"
+                        maxLength={20}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="country">Country (2 letters only, e.g., RO) *</Label>
+                    <Input
+                      id="country"
+                      value={traveler.country}
+                      maxLength={2}
+                      onChange={(e) => handleInputChange('country', e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0,2))}
+                      placeholder="RO"
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lastName">Last Name *</Label>
-                  <Input
-                    id="lastName"
-                    value={traveler.lastName}
-                    onChange={(e) => handleInputChange('lastName', e.target.value)}
-                    placeholder="Doe"
-                  />
+
+                {/* Action Buttons */}
+                <div className="flex gap-3 pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => onOpenChange(false)}
+                    className="flex-1"
+                    disabled={loading}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleBookFlight}
+                    className="flex-1"
+                    disabled={loading}
+                  >
+                    Complete Booking
+                  </Button>
                 </div>
               </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="dateOfBirth">Date of Birth *</Label>
-                  <Input
-                    id="dateOfBirth"
-                    type="date"
-                    value={traveler.dateOfBirth}
-                    onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
-                    max={new Date().toISOString().split('T')[0]}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="gender">Gender *</Label>
-                  <Select value={traveler.gender} onValueChange={(value) => handleInputChange('gender', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select gender" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="MALE">Male</SelectItem>
-                      <SelectItem value="FEMALE">Female</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email">Email *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={traveler.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  placeholder="john.doe@example.com"
-                />
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="phoneCountryCode">Country Code *</Label>
-                  <Select value={traveler.phoneCountryCode} onValueChange={(value) => handleInputChange('phoneCountryCode', value)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="40">+40 (RO)</SelectItem>
-                      <SelectItem value="1">+1 (US/CA)</SelectItem>
-                      <SelectItem value="44">+44 (UK)</SelectItem>
-                      <SelectItem value="33">+33 (FR)</SelectItem>
-                      <SelectItem value="49">+49 (DE)</SelectItem>
-                      <SelectItem value="34">+34 (ES)</SelectItem>
-                      <SelectItem value="39">+39 (IT)</SelectItem>
-                      <SelectItem value="31">+31 (NL)</SelectItem>
-                      <SelectItem value="32">+32 (BE)</SelectItem>
-                      <SelectItem value="41">+41 (CH)</SelectItem>
-                      <SelectItem value="351">+351 (PT)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2 col-span-2">
-                  <Label htmlFor="phone">Phone Number *</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    value={traveler.phone}
-                    onChange={(e) => handleInputChange('phone', e.target.value)}
-                    placeholder="555-555-5555"
-                  />
-                </div>
-              </div>
-
-              <h3 className="font-semibold pt-4">Passport Details</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="passportNumber">Passport Number *</Label>
-                  <Input
-                    id="passportNumber"
-                    value={traveler.passportNumber}
-                    onChange={(e) => handleInputChange('passportNumber', e.target.value.trim())}
-                    placeholder="123456789"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="passportExpiry">Passport Expiry *</Label>
-                  <Input
-                    id="passportExpiry"
-                    type="date"
-                    value={traveler.passportExpiry}
-                    min={new Date().toISOString().split('T')[0]}
-                    onChange={(e) => handleInputChange('passportExpiry', e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="passportIssuanceCountry">Issuance Country (2 letters, e.g., RO) *</Label>
-                  <Input
-                    id="passportIssuanceCountry"
-                    value={traveler.passportIssuanceCountry}
-                    maxLength={2}
-                    onChange={(e) => handleInputChange('passportIssuanceCountry', e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0,2))}
-                    placeholder="RO"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="nationality">Nationality (2 letters, e.g., RO) *</Label>
-                  <Input
-                    id="nationality"
-                    value={traveler.nationality}
-                    maxLength={2}
-                    onChange={(e) => handleInputChange('nationality', e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0,2))}
-                    placeholder="RO"
-                  />
-                </div>
-              </div>
-
-              <h3 className="font-semibold pt-4">Contact Address</h3>
-              <div className="space-y-2">
-                <Label htmlFor="addressLine">Street Address *</Label>
-                <Input
-                  id="addressLine"
-                  value={traveler.addressLine}
-                  onChange={(e) => handleInputChange('addressLine', e.target.value)}
-                  placeholder="123 Main Street, Apt 4B"
-                  maxLength={200}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="city">City *</Label>
-                  <Input
-                    id="city"
-                    value={traveler.city}
-                    onChange={(e) => handleInputChange('city', e.target.value)}
-                    placeholder="New York"
-                    maxLength={100}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="postalCode">Postal Code *</Label>
-                  <Input
-                    id="postalCode"
-                    value={traveler.postalCode}
-                    onChange={(e) => handleInputChange('postalCode', e.target.value)}
-                    placeholder="10001"
-                    maxLength={20}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="country">Country (2 letters only, e.g., RO) *</Label>
-                <Input
-                  id="country"
-                  value={traveler.country}
-                  maxLength={2}
-                  onChange={(e) => handleInputChange('country', e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0,2))}
-                  placeholder="RO"
-                />
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex gap-3 pt-4">
-              <Button
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                className="flex-1"
-                disabled={loading}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleBookFlight}
-                className="flex-1"
-                disabled={loading}
-              >
-                Complete Booking
-              </Button>
-            </div>
-          </div>
-        )}
+            )}
           </>
         )}
       </DialogContent>
