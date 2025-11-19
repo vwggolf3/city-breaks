@@ -50,12 +50,11 @@ export const useCachedFlightPrices = () => {
         const flightData = price.flight_data as any;
         
         // Use the original Amadeus flight offer structure if available
-        // This preserves all required fields like travelerPricings
+        // This preserves all required fields like travelerPricings, id, source
         if (flightData && typeof flightData === 'object' && flightData.type === 'flight-offer') {
           return {
             ...flightData,
-            // Mark as cached and add our custom metadata
-            source: "cached",
+            // Add our custom metadata for display (won't interfere with Amadeus API)
             destinationCity: dest?.city,
             destinationCountry: dest?.country,
             lastUpdatedAt: price.last_updated_at,
@@ -64,16 +63,17 @@ export const useCachedFlightPrices = () => {
               ...flightData.price,
               currency: price.currency || flightData.price?.currency || "EUR",
               total: price.price.toString(),
-              base: price.price.toString(),
+              base: flightData.price?.base || price.price.toString(),
+              grandTotal: flightData.price?.grandTotal || price.price.toString(),
             } : flightData.price,
           };
         }
         
-        // Fallback for legacy data structure
+        // Fallback for legacy data structure (shouldn't happen with new data)
         return {
           type: "flight-offer",
           id: price.id,
-          source: "cached",
+          source: "GDS",
           price: {
             currency: price.currency || "EUR",
             total: price.price?.toString() || "0",
