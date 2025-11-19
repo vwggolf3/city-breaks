@@ -42,6 +42,7 @@ export const BookingDialog = ({ open, onOpenChange, flightOffer }: BookingDialog
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'details' | 'confirming' | 'booking'>('details');
   const [apiResponse, setApiResponse] = useState<any>(null);
+  const [confirmedOffer, setConfirmedOffer] = useState<any>(null);
   const [traveler, setTraveler] = useState<Traveler>({
     id: "1",
     firstName: "",
@@ -159,27 +160,21 @@ const validateForm = () => {
         throw new Error('You must be logged in to book a flight');
       }
 
-      let confirmedOffer = flightOffer;
+      // Always confirm price with Amadeus API for all flights
+      const priceResponse = await supabase.functions.invoke('confirm-flight-price', {
+        body: { flightOffer },
+      });
 
-      // Only confirm price for live Amadeus offers, skip for cached flights
-      if (flightOffer.source !== 'cached') {
-        const priceResponse = await supabase.functions.invoke('confirm-flight-price', {
-          body: { flightOffer },
-        });
+      setApiResponse({ step: 'price-confirmation', response: priceResponse });
 
-        setApiResponse({ step: 'price-confirmation', response: priceResponse });
-
-        if (priceResponse.error) {
-          const apiErr = (priceResponse.data as any)?.errors?.[0];
-          throw new Error(apiErr ? `${apiErr.title}: ${apiErr.detail}` : priceResponse.error.message);
-        }
-
-        console.log('Price confirmed:', priceResponse.data);
-        confirmedOffer = priceResponse.data.data.flightOffers[0];
-      } else {
-        console.log('Using cached flight, skipping price confirmation');
-        setApiResponse({ step: 'price-confirmation', response: { data: 'Skipped for cached flight' } });
+      if (priceResponse.error) {
+        const apiErr = (priceResponse.data as any)?.errors?.[0];
+        throw new Error(apiErr ? `${apiErr.title}: ${apiErr.detail}` : priceResponse.error.message);
       }
+
+      console.log('Price confirmed:', priceResponse.data);
+      const confirmedOfferData = priceResponse.data.data.flightOffers[0];
+      setConfirmedOffer(confirmedOfferData);
 
       // Step 2: Create flight order
       setStep('booking');
@@ -233,7 +228,7 @@ const validateForm = () => {
 
       const orderResponse = await supabase.functions.invoke('create-flight-order', {
         body: { 
-          flightOffer: confirmedOffer,
+          flightOffer: confirmedOfferData,
           travelers,
           contacts,
         },
@@ -327,17 +322,28 @@ const validateForm = () => {
               </div>
             ) : (
               <div className="space-y-6">
-                {/* Flight Summary */}
-                <div className="p-4 bg-muted/50 rounded-lg space-y-2">
-                  <h3 className="font-semibold">Flight Summary</h3>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Route:</span>
-                    <span>{flightOffer.itineraries[0].segments[0].departure.iataCode} → {flightOffer.itineraries[0].segments[flightOffer.itineraries[0].segments.length - 1].arrival.iataCode}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Total Price:</span>
-                <span className="font-semibold">{flightOffer.price.currency} {flightOffer.price.total}</span>
+            {/* Flight Summary */}
+            <div className="p-4 bg-muted/50 rounded-lg space-y-2">
+              <h3 className="font-semibold">Flight Summary</h3>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Route:</span>
+                <span>{flightOffer.itineraries[0].segments[0].departure.iataCode} → {flightOffer.itineraries[0].segments[flightOffer.itineraries[0].segments.length - 1].arrival.iataCode}</span>
               </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Total Price:</span>
+                <span className="font-semibold">
+                  {confirmedOffer ? (
+                    <>{confirmedOffer.price.currency} {confirmedOffer.price.total}</>
+                  ) : (
+                    <>{flightOffer.price.currency} {flightOffer.price.total}</>
+                  )}
+                </span>
+              </div>
+              {confirmedOffer && confirmedOffer.price.total !== flightOffer.price.total && (
+                <div className="text-xs text-muted-foreground">
+                  Price confirmed with Amadeus API
+                </div>
+              )}
             </div>
 
             {/* Traveler Information Form */}
