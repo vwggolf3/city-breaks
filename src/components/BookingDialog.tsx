@@ -43,6 +43,7 @@ export const BookingDialog = ({ open, onOpenChange, flightOffer }: BookingDialog
   const [step, setStep] = useState<'details' | 'confirming' | 'booking'>('details');
   const [apiResponse, setApiResponse] = useState<any>(null);
   const [confirmedOffer, setConfirmedOffer] = useState<any>(null);
+  const [errorFields, setErrorFields] = useState<Set<string>>(new Set());
   const [traveler, setTraveler] = useState<Traveler>({
     id: "1",
     firstName: "",
@@ -92,30 +93,35 @@ export const BookingDialog = ({ open, onOpenChange, flightOffer }: BookingDialog
 
   const handleInputChange = (field: keyof Traveler, value: string) => {
     setTraveler(prev => ({ ...prev, [field]: value }));
+    // Clear error for this field when user starts typing
+    setErrorFields(prev => {
+      const next = new Set(prev);
+      next.delete(field);
+      return next;
+    });
   };
 
 const validateForm = () => {
-  const required = [
-    traveler.firstName,
-    traveler.lastName,
-    traveler.dateOfBirth,
-    traveler.gender,
-    traveler.email,
-    traveler.phone,
-    traveler.passportNumber,
-    traveler.passportExpiry,
-    traveler.passportIssuanceCountry,
-    traveler.nationality,
-    traveler.addressLine,
-    traveler.city,
-    traveler.postalCode,
-    traveler.country,
+  const errors = new Set<string>();
+  
+  // Check all required fields
+  const requiredFields: (keyof Traveler)[] = [
+    'firstName', 'lastName', 'dateOfBirth', 'gender', 'email', 'phone',
+    'passportNumber', 'passportExpiry', 'passportIssuanceCountry', 'nationality',
+    'addressLine', 'city', 'postalCode', 'country'
   ];
 
-  if (required.some((v) => !v)) {
+  requiredFields.forEach(field => {
+    if (!traveler[field]) {
+      errors.add(field);
+    }
+  });
+
+  if (errors.size > 0) {
+    setErrorFields(errors);
     toast({
       title: "Missing Information",
-      description: "Please fill in all required fields.",
+      description: "Please fill in all required fields highlighted in red.",
       variant: "destructive",
     });
     return false;
@@ -123,6 +129,8 @@ const validateForm = () => {
 
   const today = new Date().toISOString().split('T')[0];
   if (traveler.passportExpiry <= today) {
+    errors.add('passportExpiry');
+    setErrorFields(errors);
     toast({
       title: "Invalid passport expiry",
       description: "Passport expiry must be a future date.",
@@ -133,9 +141,12 @@ const validateForm = () => {
 
   // Validate country codes are exactly 2 letters (no numbers)
   const countryCodeRegex = /^[A-Z]{2}$/;
-  if (!countryCodeRegex.test(traveler.passportIssuanceCountry) || 
-      !countryCodeRegex.test(traveler.nationality) || 
-      !countryCodeRegex.test(traveler.country)) {
+  if (!countryCodeRegex.test(traveler.passportIssuanceCountry)) errors.add('passportIssuanceCountry');
+  if (!countryCodeRegex.test(traveler.nationality)) errors.add('nationality');
+  if (!countryCodeRegex.test(traveler.country)) errors.add('country');
+  
+  if (errors.size > 0) {
+    setErrorFields(errors);
     toast({
       title: "Invalid country code",
       description: "Country codes must be exactly 2 LETTERS (e.g., RO for Romania, US, GB, FR). Numbers like 'R0' are not valid.",
@@ -352,40 +363,43 @@ const validateForm = () => {
               
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="firstName">First Name *</Label>
+                      <Label htmlFor="firstName" className={errorFields.has('firstName') ? 'text-destructive' : ''}>First Name *</Label>
                       <Input
                         id="firstName"
                         value={traveler.firstName}
                         onChange={(e) => handleInputChange('firstName', e.target.value)}
                         placeholder="John"
+                        className={errorFields.has('firstName') ? 'border-destructive focus-visible:ring-destructive' : ''}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="lastName">Last Name *</Label>
+                      <Label htmlFor="lastName" className={errorFields.has('lastName') ? 'text-destructive' : ''}>Last Name *</Label>
                       <Input
                         id="lastName"
                         value={traveler.lastName}
                         onChange={(e) => handleInputChange('lastName', e.target.value)}
                         placeholder="Doe"
+                        className={errorFields.has('lastName') ? 'border-destructive focus-visible:ring-destructive' : ''}
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="dateOfBirth">Date of Birth *</Label>
+                      <Label htmlFor="dateOfBirth" className={errorFields.has('dateOfBirth') ? 'text-destructive' : ''}>Date of Birth *</Label>
                       <Input
                         id="dateOfBirth"
                         type="date"
                         value={traveler.dateOfBirth}
                         onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
                         max={new Date().toISOString().split('T')[0]}
+                        className={errorFields.has('dateOfBirth') ? 'border-destructive focus-visible:ring-destructive' : ''}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="gender">Gender *</Label>
+                      <Label htmlFor="gender" className={errorFields.has('gender') ? 'text-destructive' : ''}>Gender *</Label>
                       <Select value={traveler.gender} onValueChange={(value) => handleInputChange('gender', value)}>
-                        <SelectTrigger>
+                        <SelectTrigger className={errorFields.has('gender') ? 'border-destructive focus-visible:ring-destructive' : ''}>
                           <SelectValue placeholder="Select gender" />
                         </SelectTrigger>
                         <SelectContent>
@@ -397,13 +411,14 @@ const validateForm = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email *</Label>
+                    <Label htmlFor="email" className={errorFields.has('email') ? 'text-destructive' : ''}>Email *</Label>
                     <Input
                       id="email"
                       type="email"
                       value={traveler.email}
                       onChange={(e) => handleInputChange('email', e.target.value)}
                       placeholder="john.doe@example.com"
+                      className={errorFields.has('email') ? 'border-destructive focus-visible:ring-destructive' : ''}
                     />
                   </div>
 
@@ -430,13 +445,14 @@ const validateForm = () => {
                       </Select>
                     </div>
                     <div className="space-y-2 col-span-2">
-                      <Label htmlFor="phone">Phone Number *</Label>
+                      <Label htmlFor="phone" className={errorFields.has('phone') ? 'text-destructive' : ''}>Phone Number *</Label>
                       <Input
                         id="phone"
                         type="tel"
                         value={traveler.phone}
                         onChange={(e) => handleInputChange('phone', e.target.value)}
                         placeholder="555-555-5555"
+                        className={errorFields.has('phone') ? 'border-destructive focus-visible:ring-destructive' : ''}
                       />
                     </div>
                   </div>
@@ -444,92 +460,100 @@ const validateForm = () => {
                   <h3 className="font-semibold pt-4">Passport Details</h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="passportNumber">Passport Number *</Label>
+                      <Label htmlFor="passportNumber" className={errorFields.has('passportNumber') ? 'text-destructive' : ''}>Passport Number *</Label>
                       <Input
                         id="passportNumber"
                         value={traveler.passportNumber}
                         onChange={(e) => handleInputChange('passportNumber', e.target.value.trim())}
                         placeholder="123456789"
+                        className={errorFields.has('passportNumber') ? 'border-destructive focus-visible:ring-destructive' : ''}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="passportExpiry">Passport Expiry *</Label>
+                      <Label htmlFor="passportExpiry" className={errorFields.has('passportExpiry') ? 'text-destructive' : ''}>Passport Expiry *</Label>
                       <Input
                         id="passportExpiry"
                         type="date"
                         value={traveler.passportExpiry}
                         min={new Date().toISOString().split('T')[0]}
                         onChange={(e) => handleInputChange('passportExpiry', e.target.value)}
+                        className={errorFields.has('passportExpiry') ? 'border-destructive focus-visible:ring-destructive' : ''}
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="passportIssuanceCountry">Issuance Country (2 letters, e.g., RO) *</Label>
+                      <Label htmlFor="passportIssuanceCountry" className={errorFields.has('passportIssuanceCountry') ? 'text-destructive' : ''}>Issuance Country (2 letters, e.g., RO) *</Label>
                       <Input
                         id="passportIssuanceCountry"
                         value={traveler.passportIssuanceCountry}
                         maxLength={2}
                         onChange={(e) => handleInputChange('passportIssuanceCountry', e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0,2))}
                         placeholder="RO"
+                        className={errorFields.has('passportIssuanceCountry') ? 'border-destructive focus-visible:ring-destructive' : ''}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="nationality">Nationality (2 letters, e.g., RO) *</Label>
+                      <Label htmlFor="nationality" className={errorFields.has('nationality') ? 'text-destructive' : ''}>Nationality (2 letters, e.g., RO) *</Label>
                       <Input
                         id="nationality"
                         value={traveler.nationality}
                         maxLength={2}
                         onChange={(e) => handleInputChange('nationality', e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0,2))}
                         placeholder="RO"
+                        className={errorFields.has('nationality') ? 'border-destructive focus-visible:ring-destructive' : ''}
                       />
                     </div>
                   </div>
 
                   <h3 className="font-semibold pt-4">Contact Address</h3>
                   <div className="space-y-2">
-                    <Label htmlFor="addressLine">Street Address *</Label>
+                    <Label htmlFor="addressLine" className={errorFields.has('addressLine') ? 'text-destructive' : ''}>Street Address *</Label>
                     <Input
                       id="addressLine"
                       value={traveler.addressLine}
                       onChange={(e) => handleInputChange('addressLine', e.target.value)}
                       placeholder="123 Main Street, Apt 4B"
                       maxLength={200}
+                      className={errorFields.has('addressLine') ? 'border-destructive focus-visible:ring-destructive' : ''}
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="city">City *</Label>
+                      <Label htmlFor="city" className={errorFields.has('city') ? 'text-destructive' : ''}>City *</Label>
                       <Input
                         id="city"
                         value={traveler.city}
                         onChange={(e) => handleInputChange('city', e.target.value)}
                         placeholder="New York"
                         maxLength={100}
+                        className={errorFields.has('city') ? 'border-destructive focus-visible:ring-destructive' : ''}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="postalCode">Postal Code *</Label>
+                      <Label htmlFor="postalCode" className={errorFields.has('postalCode') ? 'text-destructive' : ''}>Postal Code *</Label>
                       <Input
                         id="postalCode"
                         value={traveler.postalCode}
                         onChange={(e) => handleInputChange('postalCode', e.target.value)}
                         placeholder="10001"
                         maxLength={20}
+                        className={errorFields.has('postalCode') ? 'border-destructive focus-visible:ring-destructive' : ''}
                       />
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="country">Country (2 letters only, e.g., RO) *</Label>
+                    <Label htmlFor="country" className={errorFields.has('country') ? 'text-destructive' : ''}>Country (2 letters only, e.g., RO) *</Label>
                     <Input
                       id="country"
                       value={traveler.country}
                       maxLength={2}
                       onChange={(e) => handleInputChange('country', e.target.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0,2))}
                       placeholder="RO"
+                      className={errorFields.has('country') ? 'border-destructive focus-visible:ring-destructive' : ''}
                     />
                   </div>
                 </div>
