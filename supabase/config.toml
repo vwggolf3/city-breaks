@@ -5,3 +5,9 @@ verify_jwt = true
 
 [functions.search-airports]
 verify_jwt = true
+
+[functions.confirm-flight-price]
+verify_jwt = true
+
+[functions.create-flight-order]
+verify_jwt = true
