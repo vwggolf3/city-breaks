@@ -34,7 +34,7 @@ serve(async (req) => {
     console.log('🔄 Starting Amsterdam prices batch refresh (weekends 3-4)...');
 
     // Get batch parameters from request (for incremental processing)
-    const { batchSize = 1 } = await req.json().catch(() => ({}));
+    const { batchSize = 10 } = await req.json().catch(() => ({}));
 
     // Initialize Supabase
     const supabase = createClient(
@@ -226,8 +226,8 @@ serve(async (req) => {
             console.log(`   ✗ ${weekend.type}: Error ${flightResponse.status}`);
           }
 
-          // Delay between API calls (100ms = max 10 requests/second)
-          await new Promise(resolve => setTimeout(resolve, 100));
+          // Delay between API calls (3000ms = 20 requests/minute to avoid rate limits)
+          await new Promise(resolve => setTimeout(resolve, 3000));
 
         } catch (error) {
           errorCount++;
@@ -235,8 +235,8 @@ serve(async (req) => {
         }
       }
 
-      // Small delay between destinations
-      await new Promise(resolve => setTimeout(resolve, 200));
+      // Delay between destinations to avoid rate limits
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
     const totalProcessed = destinations.length;
