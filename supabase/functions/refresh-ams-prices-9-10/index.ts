@@ -31,7 +31,7 @@ serve(async (req) => {
 
   try {
     console.log('🔄 Starting Amsterdam prices batch refresh (weekends 9-10)...');
-    const { batchSize = 1 } = await req.json().catch(() => ({}));
+    const { batchSize = 10 } = await req.json().catch(() => ({}));
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -188,14 +188,14 @@ serve(async (req) => {
             console.log(`   ✗ ${weekend.type}: Error ${flightResponse.status}`);
           }
 
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise(resolve => setTimeout(resolve, 3000));
         } catch (error) {
           errorCount++;
           console.error(`   ❌ ${weekend.type}:`, error);
         }
       }
 
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
     const totalProcessed = destinations.length;
