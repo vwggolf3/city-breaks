@@ -70,6 +70,10 @@ serve(async (req) => {
       );
     }
 
+    // Sort by number of airlines (most airlines first)
+    destsWithMultipleAirlines.sort((a, b) => (b.airlines?.length || 0) - (a.airlines?.length || 0));
+    console.log(`🔢 Sorted by airline count: ${destsWithMultipleAirlines[0]?.city} has ${destsWithMultipleAirlines[0]?.airlines?.length} airlines`);
+
     // Get destinations that already have recent prices (within last 24 hours)
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const { data: recentPrices } = await supabase
