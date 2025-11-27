@@ -48,13 +48,24 @@ serve(async (req) => {
     // Get all destination codes
     const { data: allDests, error: destError } = await supabase
       .from('ams_destinations')
-      .select('destination_code, city, country')
+      .select('destination_code, city, country, airlines')
       .order('destination_code');
 
     if (destError) throw destError;
     if (!allDests || allDests.length === 0) {
       return new Response(
         JSON.stringify({ message: 'No destinations found', completed: true }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Filter to only destinations with at least 2 airlines
+    const destsWithMultipleAirlines = allDests.filter(d => d.airlines && d.airlines.length >= 2);
+    console.log(`✈️ Filtered to ${destsWithMultipleAirlines.length} destinations with 2+ airlines (from ${allDests.length} total)`);
+
+    if (destsWithMultipleAirlines.length === 0) {
+      return new Response(
+        JSON.stringify({ message: 'No destinations with multiple airlines found', completed: true }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -69,7 +80,7 @@ serve(async (req) => {
     const processedCodes = new Set(recentPrices?.map(p => p.destination_code) || []);
     
     // Filter to destinations that need updates
-    const destinationsToProcess = allDests.filter(d => !processedCodes.has(d.destination_code));
+    const destinationsToProcess = destsWithMultipleAirlines.filter(d => !processedCodes.has(d.destination_code));
     
     if (destinationsToProcess.length === 0) {
       console.log('✅ All destinations have been updated in the last 24 hours');
@@ -82,19 +93,6 @@ serve(async (req) => {
     // Take only the batch size
     const destinations = destinationsToProcess.slice(0, batchSize);
     console.log(`📍 Processing ${destinations.length} destinations (${destinationsToProcess.length} remaining)`);
-    
-    const { data: _unused, error: _unusedError } = await supabase
-      .from('ams_destinations')
-      .select('destination_code')
-      .limit(1);
-
-    if (destError) throw destError;
-    if (!allDests || allDests.length === 0) {
-      return new Response(
-        JSON.stringify({ message: 'No destinations found', completed: true }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
 
     // Calculate next 10 weekends with all combinations
     const weekendCombinations = [];
