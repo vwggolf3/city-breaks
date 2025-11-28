@@ -15,11 +15,14 @@ export const useCachedFlightPrices = () => {
     destination,
   }: CachedPriceQuery) => {
     try {
+      const today = new Date().toISOString().split('T')[0];
+      
       let query = supabase
         .from("ams_flight_prices")
         .select("*")
         .eq("departure_date", departureDate)
         .eq("return_date", returnDate)
+        .gte("departure_date", today) // Only future flights
         .not("price", "is", null)
         .order("price", { ascending: true });
 
