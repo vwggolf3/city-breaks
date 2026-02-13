@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -52,9 +52,9 @@ const Profile = () => {
       fetchProfile();
       fetchTimeConstraints();
     }
-  }, [user]);
+  }, [user, fetchProfile, fetchTimeConstraints]);
 
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("profiles")
@@ -69,9 +69,9 @@ const Profile = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user?.id]);
 
-  const fetchTimeConstraints = async () => {
+  const fetchTimeConstraints = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("user_time_constraints")
@@ -84,7 +84,7 @@ const Profile = () => {
     } catch (error) {
       console.error("Error fetching time constraints:", error);
     }
-  };
+  }, [user?.id]);
 
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();

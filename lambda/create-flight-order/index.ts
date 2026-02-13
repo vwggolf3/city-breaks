@@ -101,22 +101,23 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     console.log('Creating flight order for user:', user.id);
 
     // Normalize inputs for Amadeus API
-    const normalizedTravelers = (travelers as any[]).map((t: any) => {
-      let docs = Array.isArray((t as any).documents)
-        ? (t as any).documents.filter((d: any) => {
+    const normalizedTravelers = travelers.map((t) => {
+      const tRecord = t as Record<string, unknown>;
+      const docs = Array.isArray(tRecord.documents)
+        ? (tRecord.documents as Array<Record<string, unknown>>).filter((d) => {
             if (!d?.expiryDate) return false;
-            const ts = Date.parse(d.expiryDate);
+            const ts = Date.parse(d.expiryDate as string);
             return !Number.isNaN(ts) && ts > Date.now();
           })
         : undefined;
 
-      const { contact, ...travelerWithoutContact } = t;
+      const { contact: _contact, ...travelerWithoutContact } = t;
 
-      const base: any = {
+      const base: Record<string, unknown> = {
         id: travelerWithoutContact.id,
         dateOfBirth: travelerWithoutContact.dateOfBirth,
         name: travelerWithoutContact.name,
-        gender: travelerWithoutContact.gender,
+        gender: (tRecord as Record<string, unknown>).gender,
       };
 
       if (docs && docs.length > 0) {
@@ -126,8 +127,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       }
     });
 
-    const normalizedContacts = (contacts as any[]).map((c: any) => {
-      const copy: any = { ...c };
+    const normalizedContacts = contacts.map((c) => {
+      const copy: Record<string, unknown> = { ...c };
       if (typeof copy.companyName === 'string') {
         const sanitized = copy.companyName.replace(/[^A-Za-z0-9 ]/g, '').slice(0, 20);
         if (sanitized && sanitized.length >= 2) copy.companyName = sanitized; else delete copy.companyName;
@@ -223,12 +224,13 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         if (!isRetryable || attempt === maxRetries - 1) {
           break;
         }
-      } catch (networkError: any) {
-        console.error(`Network error on attempt ${attempt + 1}:`, networkError.message);
-        lastError = networkError.message;
+      } catch (networkError: unknown) {
+        const errMsg = networkError instanceof Error ? networkError.message : 'Unknown network error';
+        console.error(`Network error on attempt ${attempt + 1}:`, errMsg);
+        lastError = errMsg;
 
         if (attempt === maxRetries - 1) {
-          throw new Error(`Network error after ${maxRetries} attempts: ${networkError.message}`);
+          throw new Error(`Network error after ${maxRetries} attempts: ${errMsg}`);
         }
       }
     }
@@ -345,12 +347,12 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(orderData),
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in create-flight-order function:', error);
     return {
       statusCode: 500,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ error: error.message, details: 'Failed to create flight order' }),
+      body: JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error', details: 'Failed to create flight order' }),
     };
   }
 };

@@ -50,7 +50,7 @@ export const useCachedFlightPrices = () => {
       // Transform cached data to match Amadeus flight offer format
       const transformedData = priceData?.map((price) => {
         const dest = destMap.get(price.destination_code);
-        const flightData = price.flight_data as any;
+        const flightData = price.flight_data as Record<string, unknown> | null;
         
         // Use the original Amadeus flight offer structure if available
         // This preserves all required fields like travelerPricings, id, source

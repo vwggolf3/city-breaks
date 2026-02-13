@@ -242,7 +242,7 @@ export const FlightResults = ({ flights, origin, destination }: FlightResultsPro
                   <div className="flex items-center gap-2">
                     <Plane className="h-4 w-4 text-primary" />
                     <span className="text-sm text-muted-foreground">
-                      AMS → {(flight as any).destinationCity || flight.id?.toString().substring(0, 3).toUpperCase() || "—"}
+                      AMS → {(flight as FlightOffer & { destinationCity?: string }).destinationCity || flight.id?.toString().substring(0, 3).toUpperCase() || "—"}
                     </span>
                   </div>
                 </div>

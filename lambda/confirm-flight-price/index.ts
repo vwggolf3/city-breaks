@@ -102,12 +102,12 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(priceData),
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in confirm-flight-price function:', error);
     return {
       statusCode: 500,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ error: error.message, details: 'Failed to confirm flight price' }),
+      body: JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error', details: 'Failed to confirm flight price' }),
     };
   }
 };

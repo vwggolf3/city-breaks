@@ -9,6 +9,21 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
+interface FlightOffer {
+  id: string;
+  price: {
+    total: string;
+    currency: string;
+  };
+  itineraries: Array<{
+    segments: Array<{
+      departure: { iataCode: string; at: string };
+      arrival: { iataCode: string; at: string };
+    }>;
+  }>;
+  [key: string]: unknown;
+}
+
 interface Traveler {
   id: string;
   firstName: string;
@@ -33,7 +48,7 @@ interface Traveler {
 interface BookingDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  flightOffer: any;
+  flightOffer: FlightOffer | null;
 }
 
 export const BookingDialog = ({ open, onOpenChange, flightOffer }: BookingDialogProps) => {
@@ -41,8 +56,8 @@ export const BookingDialog = ({ open, onOpenChange, flightOffer }: BookingDialog
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'details' | 'confirming' | 'booking'>('details');
-  const [apiResponse, setApiResponse] = useState<any>(null);
-  const [confirmedOffer, setConfirmedOffer] = useState<any>(null);
+  const [apiResponse, setApiResponse] = useState<Record<string, unknown> | null>(null);
+  const [confirmedOffer, setConfirmedOffer] = useState<FlightOffer | null>(null);
   const [errorFields, setErrorFields] = useState<Set<string>>(new Set());
   const [traveler, setTraveler] = useState<Traveler>({
     id: "1",
@@ -279,17 +294,18 @@ const validateForm = () => {
 
       // Keep dialog open so user can view API response and preserve form values
       setStep('details');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Booking error:', error);
       
       // Check if it's the common test environment limitation (error 38189)
-      const isTestEnvError = error.message?.includes('38189') || error.message?.includes('Internal error');
+      const errMsg = error instanceof Error ? error.message : '';
+      const isTestEnvError = errMsg.includes('38189') || errMsg.includes('Internal error');
       
       toast({
         title: "Booking Failed",
         description: isTestEnvError 
           ? "This flight is unavailable in the test environment. The test API uses limited cached inventory that fills up quickly. Try: (1) a different date further in the future, (2) a less popular route, or (3) upgrading to production API for real bookings."
-          : error.message || "Failed to complete booking. Please try again.",
+          : errMsg || "Failed to complete booking. Please try again.",
         variant: "destructive",
       });
       setStep('details');

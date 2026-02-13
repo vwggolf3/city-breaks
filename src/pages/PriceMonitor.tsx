@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -18,9 +18,9 @@ export default function PriceMonitor() {
 
   useEffect(() => {
     fetchStats();
-  }, []);
+  }, [fetchStats]);
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       const [priceCount, destCount, latestUpdate, weekendStats] = await Promise.all([
         supabase.from("ams_flight_prices").select("*", { count: "exact", head: true }),
@@ -63,7 +63,7 @@ export default function PriceMonitor() {
         variant: "destructive",
       });
     }
-  };
+  }, [toast]);
 
   const handleManualRefresh = async () => {
     setIsRefreshing(true);

@@ -26,7 +26,7 @@ export const SearchForm = () => {
   const [departureTimePreference, setDepartureTimePreference] = useState("any");
   const [arrivalTimePreference, setArrivalTimePreference] = useState("any");
   const [isLoading, setIsLoading] = useState(false);
-  const [flightResults, setFlightResults] = useState<any[]>([]);
+  const [flightResults, setFlightResults] = useState<Record<string, unknown>[]>([]);
   const { toast } = useToast();
   const { queryCachedPrices } = useCachedFlightPrices();
   const upcomingWeekends = useMemo(() => {

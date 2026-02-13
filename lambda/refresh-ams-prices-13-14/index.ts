@@ -28,9 +28,9 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     console.log('🔄 Starting Amsterdam prices batch refresh (weekends 13-14)...');
     const secrets = await getSecrets();
 
-    let parsedBody: any = {};
+    let parsedBody: Record<string, unknown> = {};
     try { parsedBody = JSON.parse(event.body || "{}"); } catch { parsedBody = {}; }
-    const { batchSize = 10 } = parsedBody;
+    const batchSize = typeof parsedBody.batchSize === 'number' ? parsedBody.batchSize : 10;
 
     const supabase = createClient(secrets.SUPABASE_URL, secrets.SUPABASE_SERVICE_ROLE_KEY);
 

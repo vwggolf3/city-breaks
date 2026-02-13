@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -52,9 +52,9 @@ const Favorites = () => {
     if (user) {
       fetchFavorites();
     }
-  }, [user]);
+  }, [user, fetchFavorites]);
 
-  const fetchFavorites = async () => {
+  const fetchFavorites = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("favorite_destinations")
@@ -69,7 +69,7 @@ const Favorites = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user?.id]);
 
   const addFavorite = async (e: React.FormEvent) => {
     e.preventDefault();

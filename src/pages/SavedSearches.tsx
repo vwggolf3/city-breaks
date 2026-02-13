@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -31,9 +31,9 @@ const SavedSearches = () => {
     if (user) {
       fetchSearches();
     }
-  }, [user]);
+  }, [user, fetchSearches]);
 
-  const fetchSearches = async () => {
+  const fetchSearches = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from("saved_searches")
@@ -48,7 +48,7 @@ const SavedSearches = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user?.id]);
 
   const deleteSearch = async (id: string) => {
     try {

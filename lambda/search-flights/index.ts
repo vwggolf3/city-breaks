@@ -89,8 +89,9 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
     let filteredFlights = flightData.data || [];
     if (departureTimePreference && departureTimePreference !== "any" && filteredFlights.length > 0) {
-      filteredFlights = filteredFlights.filter((flight: any) => {
-        const hour = parseInt(flight.itineraries[0].segments[0].departure.at.split("T")[1].split(":")[0]);
+      filteredFlights = filteredFlights.filter((flight: Record<string, unknown>) => {
+        const itineraries = flight.itineraries as Array<{ segments: Array<{ departure: { at: string } }> }>;
+        const hour = parseInt(itineraries[0].segments[0].departure.at.split("T")[1].split(":")[0]);
         switch (departureTimePreference) {
           case "morning": return hour >= 6 && hour < 12;
           case "afternoon": return hour >= 12 && hour < 18;
@@ -100,8 +101,9 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       });
     }
     if (arrivalTimePreference && arrivalTimePreference !== "any" && filteredFlights.length > 0) {
-      filteredFlights = filteredFlights.filter((flight: any) => {
-        const segs = flight.itineraries[0].segments;
+      filteredFlights = filteredFlights.filter((flight: Record<string, unknown>) => {
+        const itineraries = flight.itineraries as Array<{ segments: Array<{ arrival: { at: string } }> }>;
+        const segs = itineraries[0].segments;
         const hour = parseInt(segs[segs.length - 1].arrival.at.split("T")[1].split(":")[0]);
         switch (arrivalTimePreference) {
           case "morning": return hour >= 6 && hour < 12;

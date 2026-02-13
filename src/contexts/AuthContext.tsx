@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 
 // Derive profile fields from OAuth metadata with sensible fallbacks
 function deriveProfileFromUser(user: User) {
-  const md: Record<string, any> = user.user_metadata || {};
+  const md: Record<string, unknown> = user.user_metadata || {};
 
   let first_name: string | null = md.first_name || md.given_name || null;
   let last_name: string | null = md.last_name || md.family_name || null;
