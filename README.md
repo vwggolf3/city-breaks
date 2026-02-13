@@ -117,17 +117,21 @@ VITE_SUPABASE_PROJECT_ID=your_project_id
 
 ## 🚢 Deployment
 
-### Current (Lovable)
-- Push to main branch → Auto-deploy
-- Preview URLs for testing
-- Integrated with Lovable Cloud backend
+### AWS (Current)
+- Frontend: https://d15kwzkstetaby.cloudfront.net
+- Infrastructure: AWS CDK (S3 + CloudFront + Lambda + API Gateway)
+- 21 Lambda functions serving the API at `/api/*`
+- Secrets managed via AWS Secrets Manager
 
-### Future (Self-Hosted)
-See [DEPLOYMENT.md](./docs/DEPLOYMENT.md) for:
-- Vercel deployment guide
-- Docker containerization
-- Database migration
-- Scaling strategies
+```bash
+# Deploy to AWS
+./scripts/deploy.sh
+
+# Deploy to specific environment
+./scripts/deploy.sh prod
+```
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for full deployment details, monitoring, and recovery.
 
 ## 🧪 Development
 

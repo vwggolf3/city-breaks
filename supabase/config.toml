@@ -1,5 +1,8 @@
 project_id = "rzvkcsuluelkkcovvaqz"
 
+[auth]
+additional_redirect_urls = ["https://d15kwzkstetaby.cloudfront.net/**"]
+
 [functions.search-flights]
 verify_jwt = true
 
