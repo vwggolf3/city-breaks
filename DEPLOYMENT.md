@@ -1,15 +1,39 @@
 # Deployment Summary
 
-Your app is deployed to AWS with a 'preview' URL that doesn't change when you update GitHub. Share this link with others.
+Your app has a CodePipeline pipeline. Changes pushed to the `deploy-to-aws` branch on GitHub will be deployed automatically. This is managed by CloudFormation stack `CityBreaksPipelineStack`.
 
-To connect deployments to GitHub changes, ask your coding agent to `setup a AWS CodePipeline`.
+Pipeline console: https://us-east-1.console.aws.amazon.com/codesuite/codepipeline/pipelines/CityBreaksPipeline/view
 
-Services used: CloudFront, S3, Lambda, API Gateway, Secrets Manager, CloudFormation, IAM
+Services used: CodePipeline, CodeBuild, CodeConnections, CloudFront, S3, Lambda, API Gateway, Secrets Manager, CloudFormation, IAM
 
 Questions? Ask your Coding Agent:
+ - How can I change the source branch?
+ - What's the difference between preview and prod URLs?
  - What resources were deployed to AWS?
- - How do I update my deployment?
  - Clear the cache on my website
+
+## Quick Commands
+
+```bash
+# View pipeline status
+aws codepipeline get-pipeline-state --name "CityBreaksPipeline" --query 'stageStates[*].[stageName,latestExecution.status]' --output table
+
+# View build logs
+aws logs tail "/aws/codebuild/CityBreaksPipelineStack-Synth" --follow
+
+# Trigger pipeline manually
+aws codepipeline start-pipeline-execution --name "CityBreaksPipeline"
+```
+
+---
+
+## Pipeline
+
+- Stack: `CityBreaksPipelineStack`
+- Pipeline: `CityBreaksPipeline`
+- Source: `vwggolf3/city-breaks` branch `deploy-to-aws`
+- CodeConnection ARN: `arn:aws:codeconnections:us-east-2:017247443276:connection/9178e508-69fc-4c19-896a-99d3ef9d5f55`
+- Prod Secrets: `CityBreaks/prod/secrets`
 
 ## Endpoints
 
