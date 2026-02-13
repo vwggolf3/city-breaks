@@ -53,6 +53,12 @@ export const FlightResults = ({ flights, origin, destination }: FlightResultsPro
     setBookingDialogOpen(true);
   };
 
+  const getFirstDeparture = (f: FlightOffer) => f.itineraries?.[0]?.segments?.[0]?.departure?.at;
+  const getLastArrival = (f: FlightOffer) => {
+    const segs = f.itineraries?.[0]?.segments;
+    return segs?.[segs.length - 1]?.arrival?.at;
+  };
+
   const sortedFlights = useMemo(() => {
     const flightsCopy = [...flights];
     
@@ -63,26 +69,20 @@ export const FlightResults = ({ flights, origin, destination }: FlightResultsPro
         return flightsCopy.sort((a, b) => parseFloat(b.price.total) - parseFloat(a.price.total));
       case "departure-asc":
         return flightsCopy.sort((a, b) => 
-          new Date(a.itineraries[0].segments[0].departure.at).getTime() - 
-          new Date(b.itineraries[0].segments[0].departure.at).getTime()
+          new Date(getFirstDeparture(a) || 0).getTime() - new Date(getFirstDeparture(b) || 0).getTime()
         );
       case "departure-desc":
         return flightsCopy.sort((a, b) => 
-          new Date(b.itineraries[0].segments[0].departure.at).getTime() - 
-          new Date(a.itineraries[0].segments[0].departure.at).getTime()
+          new Date(getFirstDeparture(b) || 0).getTime() - new Date(getFirstDeparture(a) || 0).getTime()
         );
       case "arrival-asc":
-        return flightsCopy.sort((a, b) => {
-          const aLastSegment = a.itineraries[0].segments[a.itineraries[0].segments.length - 1];
-          const bLastSegment = b.itineraries[0].segments[b.itineraries[0].segments.length - 1];
-          return new Date(aLastSegment.arrival.at).getTime() - new Date(bLastSegment.arrival.at).getTime();
-        });
+        return flightsCopy.sort((a, b) => 
+          new Date(getLastArrival(a) || 0).getTime() - new Date(getLastArrival(b) || 0).getTime()
+        );
       case "arrival-desc":
-        return flightsCopy.sort((a, b) => {
-          const aLastSegment = a.itineraries[0].segments[a.itineraries[0].segments.length - 1];
-          const bLastSegment = b.itineraries[0].segments[b.itineraries[0].segments.length - 1];
-          return new Date(bLastSegment.arrival.at).getTime() - new Date(aLastSegment.arrival.at).getTime();
-        });
+        return flightsCopy.sort((a, b) => 
+          new Date(getLastArrival(b) || 0).getTime() - new Date(getLastArrival(a) || 0).getTime()
+        );
       default:
         return flightsCopy;
     }
@@ -153,10 +153,11 @@ export const FlightResults = ({ flights, origin, destination }: FlightResultsPro
 
       <div className="space-y-4">
         {sortedFlights.map((flight) => {
-          const outbound = flight.itineraries[0];
-          const returnFlight = flight.itineraries[1];
-          const outboundStops = getStopsCount(outbound.segments);
+          const outbound = flight.itineraries?.[0];
+          const returnFlight = flight.itineraries?.[1];
+          const outboundStops = outbound ? getStopsCount(outbound.segments) : 0;
           const returnStops = returnFlight ? getStopsCount(returnFlight.segments) : 0;
+          const hasItineraryData = outbound?.segments?.length > 0;
 
           return (
             <Card 
@@ -181,7 +182,7 @@ export const FlightResults = ({ flights, origin, destination }: FlightResultsPro
                   </div>
                   <div className="text-right">
                     <Badge variant="outline" className="mb-2">
-                      {flight.validatingAirlineCodes?.[0] || outbound.segments[0].carrierCode}
+                      {flight.validatingAirlineCodes?.[0] || outbound?.segments?.[0]?.carrierCode || "—"}
                     </Badge>
                     {flight.numberOfBookableSeats && flight.numberOfBookableSeats < 5 && (
                       <div className="text-xs text-destructive">
@@ -192,6 +193,7 @@ export const FlightResults = ({ flights, origin, destination }: FlightResultsPro
                 </div>
 
                 {/* Outbound Flight */}
+                {hasItineraryData ? (
                 <div className="border-l-2 border-primary pl-4">
                   <div className="flex items-center gap-2 mb-2">
                     <Plane className="h-4 w-4 text-primary" />
@@ -235,6 +237,16 @@ export const FlightResults = ({ flights, origin, destination }: FlightResultsPro
                     </div>
                   </div>
                 </div>
+                ) : (
+                <div className="border-l-2 border-primary pl-4 py-2">
+                  <div className="flex items-center gap-2">
+                    <Plane className="h-4 w-4 text-primary" />
+                    <span className="text-sm text-muted-foreground">
+                      AMS → {(flight as any).destinationCity || flight.id?.toString().substring(0, 3).toUpperCase() || "—"}
+                    </span>
+                  </div>
+                </div>
+                )}
 
                 {/* Return Flight */}
                 {returnFlight && (
