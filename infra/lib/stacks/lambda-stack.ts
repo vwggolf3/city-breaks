@@ -87,6 +87,7 @@ export class LambdaStack extends cdk.Stack {
           bundling: {
             minify: true,
             sourceMap: true,
+            externalModules: ["@aws-sdk/*"],
           },
         });
 

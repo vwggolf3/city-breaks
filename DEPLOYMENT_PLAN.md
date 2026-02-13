@@ -15,24 +15,24 @@ Coding Agents should follow this Deployment Plan, and validate previous progress
 **IMPORTANT**: Update this plan after EACH step completes. Mark the step `[x]` and update `last_updated` timestamp.
 
 ## Phase 1: Gather Context and Configure
-- [ ] Step 0: Inform User of Execution Flow
-- [ ] Step 1: Create Deployment Plan
-- [ ] Step 2: Create Deploy Branch
-- [ ] Step 3: Detect Build Configuration
-- [ ] Step 4: Validate Prerequisites
-- [ ] Step 5: Analyze Supabase Structure
-- [ ] Step 6: Configure Supabase Project
-- [ ] Step 7: Revisit Deployment Plan
+- [x] Step 0: Inform User of Execution Flow
+- [x] Step 1: Create Deployment Plan
+- [x] Step 2: Create Deploy Branch
+- [x] Step 3: Detect Build Configuration
+- [x] Step 4: Validate Prerequisites
+- [x] Step 5: Analyze Supabase Structure
+- [x] Step 6: Configure Supabase Project
+- [x] Step 7: Revisit Deployment Plan
 
 ## Phase 2: Migrate Edge Functions
-- [ ] Step 8: Create Lambda Directory Structure
-- [ ] Step 9: Detect and Create Required Secrets
-- [ ] Step 10: Migrate Edge Functions to Lambda Format
-- [ ] Step 11: Detect and Convert AI Functions to Bedrock
-- [ ] Step 12: Migrate Lovable Cloud Auth to Supabase OAuth
-- [ ] Step 13: Update All Edge Function References
-- [ ] Step 14: Delete Original Supabase Functions
-- [ ] Step 15: Update .gitignore
+- [x] Step 8: Create Lambda Directory Structure
+- [x] Step 9: Detect and Create Required Secrets
+- [x] Step 10: Migrate Edge Functions to Lambda Format (21 functions)
+- [x] Step 11: Detect and Convert AI Functions to Bedrock (skipped - no AI)
+- [x] Step 12: Migrate Lovable Cloud Auth to Supabase OAuth (skipped - not detected)
+- [x] Step 13: Update All Edge Function References
+- [x] Step 14: Delete Original Supabase Functions
+- [x] Step 15: Update .gitignore
 
 ## Phase 3: Build CDK Infrastructure
 - [ ] Step 16: Initialize CDK Foundation
@@ -52,10 +52,11 @@ Coding Agents should follow this Deployment Plan, and validate previous progress
 ## Deployment Info
 
 - Deployment URL: [after completion]
-- Lambda Stack: [after creation]
-- Frontend Stack: [after creation]
-- Supabase Project: [after configuration]
-- Edge Functions Count: [after analysis]
+- Lambda Stack: CityBreaksLambda-preview-gabbypop
+- Frontend Stack: CityBreaksFrontend-preview-gabbypop
+- Supabase Project: rzvkcsuluelkkcovvaqz (city-breaks-aws)
+- Edge Functions Count: 21
+- Secret: CityBreaks/preview-gabbypop/secrets
 
 ## Recovery Guide
 
