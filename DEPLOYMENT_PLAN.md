@@ -43,7 +43,7 @@ Coding Agents should follow this Deployment Plan, and validate previous progress
 
 - Pipeline Name: CityBreaksPipeline
 - Pipeline Stack: CityBreaksPipelineStack
-- CodeConnection ARN: arn:aws:codeconnections:us-east-1:017247443276:connection/c77c6291-e451-4339-ba8d-795590f43538
+- CodeConnection ARN: arn:aws:codeconnections:us-east-2:017247443276:connection/9178e508-69fc-4c19-896a-99d3ef9d5f55
 - Pipeline URL: (after completion)
 
 ## Recovery Guide
