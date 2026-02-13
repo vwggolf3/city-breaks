@@ -1,4 +1,4 @@
-project_id = "mornsczwzuksamxmtmbe"
+project_id = "rzvkcsuluelkkcovvaqz"
 
 [functions.search-flights]
 verify_jwt = true
