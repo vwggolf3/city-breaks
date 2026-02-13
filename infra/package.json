@@ -1,0 +1,33 @@
+{
+  "name": "infra",
+  "version": "0.1.0",
+  "bin": {
+    "infra": "bin/infra.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "test": "jest",
+    "cdk": "cdk",
+    "deploy": "npm run deploy:preview",
+    "deploy:preview": "cdk deploy --all --require-approval never --progress events",
+    "destroy": "cdk destroy --all",
+    "synth": "cdk synth",
+    "diff": "cdk diff"
+  },
+  "devDependencies": {
+    "@types/jest": "^30",
+    "@types/node": "^24.10.1",
+    "aws-cdk": "2.1106.0",
+    "jest": "^30",
+    "ts-jest": "^29",
+    "ts-node": "^10.9.2",
+    "typescript": "~5.9.3"
+  },
+  "dependencies": {
+    "@aws-solutions-constructs/aws-cloudfront-s3": "^2.99.0",
+    "aws-cdk-lib": "^2.238.0",
+    "constructs": "^10.4.5",
+    "esbuild": "^0.27.3"
+  }
+}
