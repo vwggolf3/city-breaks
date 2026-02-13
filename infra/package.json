@@ -9,6 +9,8 @@
     "watch": "tsc -w",
     "test": "jest",
     "cdk": "cdk",
+    "deploy:pipeline": "cdk deploy CityBreaksPipelineStack --context codeConnectionArn=arn:aws:codeconnections:us-east-1:017247443276:connection/c77c6291-e451-4339-ba8d-795590f43538 --context repositoryName=vwggolf3/city-breaks --context branchName=deploy-to-aws --require-approval never --progress events",
+    "destroy:pipeline": "cdk destroy CityBreaksPipelineStack --context codeConnectionArn=arn:aws:codeconnections:us-east-1:017247443276:connection/c77c6291-e451-4339-ba8d-795590f43538",
     "deploy": "npm run deploy:preview",
     "deploy:preview": "cdk deploy --all --require-approval never --progress events",
     "destroy": "cdk destroy --all",
