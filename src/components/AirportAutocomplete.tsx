@@ -70,11 +70,13 @@ export const AirportAutocomplete = ({
       if (inputValue.length >= 1 && !selectedAirport) {
         setIsLoading(true);
         try {
-          const { data, error } = await supabase.functions.invoke('get-airports', {
-            body: { query: inputValue }
+          const response = await fetch('/api/get-airports', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: inputValue }),
           });
-
-          if (error) throw error;
+          if (!response.ok) throw new Error('Failed to fetch airports');
+          const data = await response.json();
 
           if (data?.data) {
             setAirports(data.data);

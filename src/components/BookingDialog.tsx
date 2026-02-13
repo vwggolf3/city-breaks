@@ -172,19 +172,25 @@ const validateForm = () => {
       }
 
       // Always confirm price with Amadeus API for all flights
-      const priceResponse = await supabase.functions.invoke('confirm-flight-price', {
-        body: { flightOffer },
+      const priceRes = await fetch('/api/confirm-flight-price', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ flightOffer }),
       });
+      const priceData = await priceRes.json();
 
-      setApiResponse({ step: 'price-confirmation', response: priceResponse });
+      setApiResponse({ step: 'price-confirmation', response: priceData });
 
-      if (priceResponse.error) {
-        const apiErr = (priceResponse.data as any)?.errors?.[0];
-        throw new Error(apiErr ? `${apiErr.title}: ${apiErr.detail}` : priceResponse.error.message);
+      if (!priceRes.ok) {
+        const apiErr = priceData?.errors?.[0];
+        throw new Error(apiErr ? `${apiErr.title}: ${apiErr.detail}` : priceData?.error || 'Price confirmation failed');
       }
 
-      console.log('Price confirmed:', priceResponse.data);
-      const confirmedOfferData = priceResponse.data.data.flightOffers[0];
+      console.log('Price confirmed:', priceData);
+      const confirmedOfferData = priceData.data.flightOffers[0];
       setConfirmedOffer(confirmedOfferData);
 
       // Step 2: Create flight order
@@ -237,25 +243,31 @@ const validateForm = () => {
         }
       }];
 
-      const orderResponse = await supabase.functions.invoke('create-flight-order', {
-        body: { 
+      const orderRes = await fetch('/api/create-flight-order', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
           flightOffer: confirmedOfferData,
           travelers,
           contacts,
-        },
+        }),
       });
+      const orderData = await orderRes.json();
 
-      setApiResponse({ step: 'create-order', response: orderResponse });
+      setApiResponse({ step: 'create-order', response: orderData });
 
-      if (orderResponse.error) {
-        const apiErr = (orderResponse.data as any)?.errors?.[0];
-        throw new Error(apiErr ? `${apiErr.title}: ${apiErr.detail}` : orderResponse.error.message);
+      if (!orderRes.ok) {
+        const apiErr = orderData?.errors?.[0];
+        throw new Error(apiErr ? `${apiErr.title}: ${apiErr.detail}` : orderData?.error || 'Order creation failed');
       }
 
-      console.log('Booking created:', orderResponse.data);
+      console.log('Booking created:', orderData);
 
-      const isSimulated = (orderResponse.data as any)?.meta?.simulated;
-      const ref = orderResponse.data.data?.associatedRecords?.[0]?.reference;
+      const isSimulated = orderData?.meta?.simulated;
+      const ref = orderData.data?.associatedRecords?.[0]?.reference;
       toast({
         title: isSimulated ? "Booking Recorded in Demo Mode" : "Booking Successful!",
         description: ref

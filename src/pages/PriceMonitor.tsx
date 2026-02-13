@@ -68,11 +68,13 @@ export default function PriceMonitor() {
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
     try {
-      const { data, error } = await supabase.functions.invoke("refresh-ams-prices", {
-        body: { batchSize: 20, offsetDestinations: 0 },
+      const response = await fetch('/api/refresh-ams-prices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ batchSize: 20, offsetDestinations: 0 }),
       });
-
-      if (error) throw error;
+      if (!response.ok) throw new Error('Failed to trigger price refresh');
+      const data = await response.json();
 
       toast({
         title: "Refresh Started",

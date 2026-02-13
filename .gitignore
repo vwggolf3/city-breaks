@@ -22,3 +22,18 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Lambda dependencies
+lambda/*/node_modules/
+lambda/*/.env
+
+# CDK
+infra/cdk.out/
+infra/node_modules/
+infra/*.js
+infra/*.d.ts
+infra/.env
+
+# Environment variables
+.env.local
+.env.*.local
