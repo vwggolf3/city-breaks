@@ -1,20 +1,38 @@
 #!/usr/bin/env node
-import * as cdk from 'aws-cdk-lib/core';
-import { InfraStack } from '../lib/infra-stack';
+import "source-map-support/register";
+import * as cdk from "aws-cdk-lib";
+import { LambdaStack } from "../lib/stacks/lambda-stack";
+import { FrontendStack } from "../lib/stacks/frontend-stack";
+import { execSync } from "child_process";
+import * as path from "path";
 
 const app = new cdk.App();
-new InfraStack(app, 'InfraStack', {
-  /* If you don't specify 'env', this stack will be environment-agnostic.
-   * Account/Region-dependent features and context lookups will not work,
-   * but a single synthesized template can be deployed anywhere. */
 
-  /* Uncomment the next line to specialize this stack for the AWS Account
-   * and Region that are implied by the current CLI configuration. */
-  // env: { account: process.env.CDK_DEFAULT_ACCOUNT, region: process.env.CDK_DEFAULT_REGION },
+const environment = app.node.tryGetContext("environment") ||
+  `preview-${execSync("whoami").toString().trim()}`;
 
-  /* Uncomment the next line if you know exactly what Account and Region you
-   * want to deploy the stack to. */
-  // env: { account: '123456789012', region: 'us-east-1' },
+const account = process.env.CDK_DEFAULT_ACCOUNT;
+const region = process.env.CDK_DEFAULT_REGION || "us-east-1";
+const env = { account, region };
 
-  /* For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html */
+const buildOutputPath = path.join(__dirname, "../../dist");
+
+const lambdaStack = new LambdaStack(app, `CityBreaksLambda-${environment}`, {
+  env,
+  environment,
+  terminationProtection: environment === "prod",
 });
+
+const frontendStack = new FrontendStack(app, `CityBreaksFrontend-${environment}`, {
+  env,
+  environment,
+  buildOutputPath,
+  apiGatewayDomain: lambdaStack.apiGatewayDomain,
+  terminationProtection: environment === "prod",
+});
+
+frontendStack.addDependency(lambdaStack);
+
+cdk.Tags.of(app).add("Project", "CityBreaks");
+cdk.Tags.of(app).add("ManagedBy", "CDK");
+cdk.Tags.of(app).add("Environment", environment);
